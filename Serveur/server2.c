@@ -106,6 +106,8 @@ static void app(void)
             {
                Client client = clients[i];
                int c = read_client(clients[i].sock, buffer);
+               printf("hellooo\n");
+
                /* client disconnected */
                if(c == 0)
                {
@@ -117,7 +119,9 @@ static void app(void)
                }
                else
                {
-                  send_message_to_all_clients(clients, client, actual, buffer, 0);
+                  printf("%s\n", buffer);
+                  // action(buffer, clients, actual);
+                  // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
             }
@@ -227,8 +231,22 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
+static char* action(char* buffer, Client* clients, int actual){
+   if(strcmp(buffer,"getListPlayers")){
+      char* toSend = "listPlayers";
+      // for(int i = 0; i<actual; i++){
+      //    strcat(toSend, " ");
+      //    strcat(toSend, clients[i].name);
+      // }
+      return toSend;
+   }
+   return NULL;
+}
+
 int main(int argc, char **argv)
 {
+   printf("hello\n");
+
    init();
 
    app();

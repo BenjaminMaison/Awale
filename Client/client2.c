@@ -30,6 +30,8 @@ static void app(const char *address, const char *name)
    SOCKET sock = init_connection(address);
    char buffer[BUF_SIZE];
 
+   menu(sock, 0);
+
    fd_set rdfs;
 
    /* send our name */
@@ -51,25 +53,25 @@ static void app(const char *address, const char *name)
          exit(errno);
       }
 
-      /* something from standard input : i.e keyboard */
-      if(FD_ISSET(STDIN_FILENO, &rdfs))
-      {
-         fgets(buffer, BUF_SIZE - 1, stdin);
-         {
-            char *p = NULL;
-            p = strstr(buffer, "\n");
-            if(p != NULL)
-            {
-               *p = 0;
-            }
-            else
-            {
-               /* fclean */
-               buffer[BUF_SIZE - 1] = 0;
-            }
-         }
-         write_server(sock, buffer);
-      }
+      // /* something from standard input : i.e keyboard */
+      // if(FD_ISSET(STDIN_FILENO, &rdfs))
+      // {
+      //    fgets(buffer, BUF_SIZE - 1, stdin);
+      //    {
+      //       char *p = NULL;
+      //       p = strstr(buffer, "\n");
+      //       if(p != NULL)
+      //       {
+      //          *p = 0;
+      //       }
+      //       else
+      //       {
+      //          /* fclean */
+      //          buffer[BUF_SIZE - 1] = 0;
+      //       }
+      //    }
+      //    write_server(sock, buffer);
+      // }
       else if(FD_ISSET(sock, &rdfs))
       {
          int n = read_server(sock, buffer);
@@ -146,6 +148,48 @@ static void write_server(SOCKET sock, const char *buffer)
       exit(errno);
    }
 }
+
+static void menu(SOCKET sock, int state)
+{
+      printf("Bienvenue sur le jeu Awale!\n\n");
+
+      printf("Menu :\n");
+      printf("1. Se connecter à un autre joueur\n");
+
+      int choix;
+      printf("\nVeuillez entrer le numéro de votre choix : ");
+      scanf("%d", &choix);
+
+      switch (choix) {
+         case 1:
+               printf("Vous avez choisi de vous connecter à un autre joueur!\n");
+               write_server(sock, "getListPlayer");
+               break;
+         default:
+               printf("Choix invalide. Veuillez entrer un numéro valide.\n");
+      }
+   }
+
+static void action(char* buffer){
+   char *action = strtok(buffer, " ");
+   char newBuffer[BUF_SIZE];
+    strcpy(newBuffer, buffer + strlen(action) + 1);
+    if (strcmp(action, "listPlayers"))
+    {
+        displayPlayers(newBuffer);
+    }
+}
+
+static void displayPlayers(char* buffer){
+   char* players = strtok(buffer, " ");
+    while ( players != NULL ) {
+        printf ( "%s\n", players );
+        // On demande le token suivant.
+        players = strtok ( NULL, " " );
+    }
+}
+
+
 
 int main(int argc, char **argv)
 {
