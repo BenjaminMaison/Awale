@@ -1,5 +1,7 @@
 #include "awale.h"
 #include <stdio.h>
+#include <stdlib.h>
+
 GameState game;
 
 void init() 
@@ -14,29 +16,105 @@ void init()
     game.currentPlayer = 0;
 }
 
+/**
+ * @brief Check if the game is finished
+ * 
+ * @return int - 1 if the game is finished, 0 otherwise
+ */
+int isFinished()
+{
+    if(game.score[0] >= 25 || game.score[1] >= 25) {
+        return 1;
+    } 
+    int* legalMoves = getLegalMoves();
+    if(legalMoves == NULL) {
+        return 1;
+    }
+    else 
+    {
+        free(legalMoves);
+        return 0;
+    }
+}
+
+/**
+ * @brief Check if a move is legal
+ * 
+ * @param hole the chosen hole
+ * @return int - 1 if the move is legal, 0 otherwise
+ */
 int isLegal(int hole)
 {
     // Check if the chosen hole is valid and contains stones
     if (hole < 0 || hole >= NUM_HOLES || game.board[game.currentPlayer][hole] == 0) {
         return 0;
     }
+
+    GameState newState = playTurn(hole);
+    if(isOpponentStarving(newState)) 
+    {
+        return 0;
+    }
     return 1;
 }
 
-GameState playTurn(int hole) {
-    printf("Player %d plays hole %d\n", game.currentPlayer, hole);
-    if(!isLegal(hole)) {
-        return game;
+/**
+ * @brief Get an array of legal moves. If not null, the array must be freed after use
+ * @return int* - an array of legal moves, NULL if there are no legal moves
+ */
+int* getLegalMoves()
+{
+    // Return an array of legal moves
+    int* legalMoves = malloc(NUM_HOLES * sizeof(int));
+    int numLegalMoves = 0;
+    for(int i = 0; i < NUM_HOLES; i++) {
+        if(isLegal(i)) {
+            legalMoves[numLegalMoves] = i;
+            numLegalMoves++;
+        }
     }
+    if(numLegalMoves == 0) {
+        free(legalMoves);
+        return NULL;
+    }
+    legalMoves = realloc(legalMoves, numLegalMoves * sizeof(int));
+    return legalMoves;
+}
+
+/**
+ * @brief Check if the opponent is starving (all holes are empty)
+ * 
+ * @param game the game state
+ * @return int - 1 if the opponent is starving, 0 otherwise
+ */
+int isOpponentStarving(GameState game)
+{
+    // Check if the opponent is starving
+    int player = 1 - game.currentPlayer;
+    for(int i = 0; i < NUM_HOLES; i++) {
+        if(game.board[player][i] > 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/**
+ * @brief Play a turn. The chosen hole is emptied and its stones are distributed counterclockwise. 
+ * @param hole must be a legal move
+ * @return GameState - the new game state
+ */
+GameState playTurn(int hole) {
+    GameState newGame = game;
 
     // Pick up all the stones from the chosen hole
-    if(game.currentPlayer == 0) {
+    if(newGame.currentPlayer == 0) {
         hole = NUM_HOLES - 1 - hole;
     }
-    int stones = game.board[game.currentPlayer][hole];
-    game.board[game.currentPlayer][hole] = 0;
+    int stones = newGame.board[newGame.currentPlayer][hole];
+    newGame.board[newGame.currentPlayer][hole] = 0;
 
-    int player = game.currentPlayer;
+    int player = newGame.currentPlayer;
 
     // Distribute the stones counterclockwise
     while(stones > 0)
@@ -50,14 +128,14 @@ GameState playTurn(int hole) {
             hole = 0;
             player = 1 - player;
         }
-        game.board[player][hole]++;
+        newGame.board[player][hole]++;
         stones--;
     }
 
     // Claim stones from opponent's holes
-    while (player != game.currentPlayer && (game.board[player][hole] == 2 || game.board[player][hole] == 3)) {
-        game.score[game.currentPlayer] += game.board[player][hole];
-        game.board[player][hole] = 0;
+    while (player != newGame.currentPlayer && (newGame.board[player][hole] == 2 || newGame.board[player][hole] == 3)) {
+        newGame.score[newGame.currentPlayer] += newGame.board[player][hole];
+        newGame.board[player][hole] = 0;
         player ? hole-- : hole++;
         if(hole == NUM_HOLES) {
             hole = NUM_HOLES - 1;
@@ -70,9 +148,8 @@ GameState playTurn(int hole) {
     }
 
     // Switch to the other player
-    game.currentPlayer = 1 - game.currentPlayer;
-
-    return game;
+    newGame.currentPlayer = 1 - newGame.currentPlayer;
+    return newGame;
 }
 
 void display()
@@ -123,17 +200,6 @@ void display()
 
 }
 
-int isFinished()
-{
-    if(game.score[0] >= 25 || game.score[1] >= 25) {
-        return 1;
-    } 
-    else
-    {
-        return 0;
-    }
-}
-
 void clear()
 {
     // Clear the terminal
@@ -155,7 +221,7 @@ int main()
     while(!isFinished()) {
         printf("\nPlayer %d, choose a hole: ", game.currentPlayer);
         scanf("%d", &hole);
-        playTurn(hole);
+        game = playTurn(hole);
         clear();
         display();
     }

@@ -20,5 +20,8 @@ typedef struct GameState{
 
 void init();
 GameState playTurn(int hole);
-int isLegal();
+int isLegal(int hole);
+int isOpponentStarving(GameState game);
+int* getLegalMoves();
 int isFinished(); 
+void display();
