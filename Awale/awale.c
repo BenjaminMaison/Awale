@@ -154,50 +154,65 @@ GameState playTurn(int hole) {
 
 void display()
 {
-    int player = game.currentPlayer;
-    printf("Player %d's turn\n", player);
+    int currentPlayer = game.currentPlayer;
+    printf("Player %d's turn\n", currentPlayer);
     printf("Score: %d - %d\n", game.score[0], game.score[1]);
     
     // Display the board
-    printf("    ");
-    if(player == 0)
-    {
-        for(char c = 'A' + NUM_HOLES -1 ; c >= 'A'; c--) {
-            printf("%c ", c);
-        }
-        printf("\n    ");
-        for(int i = NUM_HOLES -1 ; i >= 0; i--) {
-            printf("%d ", game.board[1][i]);
-        }
-        printf("\n    ");
-        for(int i = NUM_HOLES -1 ; i >= 0; i--) {
-            printf("%d ", game.board[0][i]);
-        }
-        printf("\n    ");
-        for(char c = 'a'; c < 'a' + NUM_HOLES; c++) {
-            printf("%c ", c);
-        }
-    }
-    else
-    {
-        for(char c = 'a' + NUM_HOLES -1 ; c >= 'a'; c--) {
-            printf("%c ", c);
-        }
-        printf("\n    ");
-        for(int i = 0; i <  NUM_HOLES; i++) {
-            printf("%d ", game.board[0][i]);
-        }
-        printf("\n    ");
-        for(int i = 0; i < NUM_HOLES; i++) {
-            printf("%d ", game.board[1][i]);
-        }
-        printf("\n    ");
-        for(char c = 'A'; c < 'A' + NUM_HOLES; c++) {
-            printf("%c ", c);
-        }
+    char topLabel = (currentPlayer == 0) ? 'A' : 'a';
+    char bottomLabel = (currentPlayer == 0) ? 'a' : 'A';
+
+    // Print column labels
+    printf("       ");
+    for(char label = topLabel + NUM_HOLES - 1; label >= topLabel; label--) {
+        printf("%c         ", label);
     }
     printf("\n");
 
+    // Print separator
+    printf("  |");
+    for(int i = 0; i < NUM_HOLES; i++) {
+        printf("---------");
+    }
+    printf("-----|\n");
+
+    // Print upper part of the board
+    for(int i = (currentPlayer == 0) ? (NUM_HOLES - 1) : 0; 
+            (currentPlayer == 0) ? (i >= 0) : (i < NUM_HOLES); 
+            (currentPlayer == 0) ? (i--) : (i++)) {
+        printf("  |    %d  ", game.board[1 - currentPlayer][i]);
+    }
+
+    printf("  |\n");
+    // Print separator
+    printf("  |");
+    for(int i = 0; i < NUM_HOLES; i++) {
+        printf("---------");
+    }
+    printf("-----|\n");
+
+    // Print lower part of the board
+    for(int i = (currentPlayer == 0) ? (NUM_HOLES - 1) : 0; 
+            (currentPlayer == 0) ? (i >= 0) : (i < NUM_HOLES); 
+            (currentPlayer == 0) ? (i--) : (i++)) {
+        printf("  |    %d  ", game.board[currentPlayer][i]);
+    }
+    printf("  |\n");
+
+    // Print separator
+    printf("  |");
+    for(int i = 0; i < NUM_HOLES; i++) {
+        printf("---------");
+    }
+    printf("-----|\n");
+
+    // Print column labels
+    printf("       ");
+    for(char label = bottomLabel; label < bottomLabel + NUM_HOLES; label++) {
+        printf("%c         ", label);
+    }
+    
+    printf("\n\n"); // Add extra line for separation
 }
 
 void clear()
@@ -222,7 +237,7 @@ int main()
         printf("\nPlayer %d, choose a hole: ", game.currentPlayer);
         scanf("%d", &hole);
         game = playTurn(hole);
-        clear();
+        refresh();
         display();
     }
     printf("Player %d wins!\n", game.score[0] > game.score[1] ? 0 : 1);
