@@ -5,6 +5,12 @@
 
 #include "server2.h"
 #include "client2.h"
+#include "awale.h"
+
+ /* an array for all games */
+int nbGames = 0;
+Game games[MAX_CLIENTS/2];
+
 
 static void init(void)
 {
@@ -119,9 +125,7 @@ static void app(void)
                }
                else
                {
-                  printf("before action\n");
-                  printf("%s\n", buffer);
-                  action(buffer, clients, actual, clients[i].sock);
+                  action(buffer, clients, actual, i);
                   // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
@@ -225,6 +229,7 @@ static int read_client(SOCKET sock, char *buffer)
 
 static void write_client(SOCKET sock, const char *buffer)
 {
+   printf("[CLIENT RESPONSE] %s\n", buffer);
    if(send(sock, buffer, strlen(buffer), 0) < 0)
    {
       perror("send()");
@@ -232,19 +237,44 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-static void action(const char *buffer, Client *clients, int actual, SOCKET sock){
-   printf("action\n");
-   if(strcmp(buffer,"getListPlayers")){
-      write_client(sock, "listPlayers");
-      int i = 0;
-      for(i = 0; i<actual; i++){
-         printf("%d\n", i);
-         write_client(sock, clients[i].name);
-         printf("%d\n", actual);
-         printf("%s\n",clients[i].name);
+static void action(const char *buffer, Client *clients, int actual, int client_index){
+   char temp[BUF_SIZE];
+   strcpy(temp, buffer);
+   char* action = strtok(temp, "\n");
+   printf("[CLIENT %d REQUEST] %s\n", client_index, action);
+
+   if(strcmp(action,"getListPlayers")){
+      char listPlayers[BUF_SIZE];
+      strcat(listPlayers, "listPlayers\n");
+      for(int i = 0; i < actual; i++){
+         //strcat(listPlayers, i);
+         strcat(listPlayers, clients[i].name);
+         strcat(listPlayers, "\n");
       }
-      printf("end");
-      write_client(sock, "end");
+      write_client(clients[client_index].sock, listPlayers);
+   }
+   else if(strcmp(action, "startGame") == 0)
+   {
+      char* opponent = strtok(NULL, "\n");
+      printf("Opponent %d\n", atoi(opponent));
+      int opponent_index = atoi(opponent);
+      if(opponent_index < actual)
+      {
+         SOCKET sockOpponent = clients[opponent_index].sock;
+         write_client(sockOpponent, "startGame\n");
+         GameState * gameState = &games[nbGames].state;
+         //initGameState(gameState);
+         games[nbGames].player1 = actual;
+         games[nbGames].player2 = opponent_index;
+         games[nbGames].state = *gameState;
+         nbGames++;
+         printf("Game %d\n", nbGames);
+      }
+      write_client(clients, "");
+   }
+   else if(strcmp(action, "move\n") == 0)
+   {
+      write_client(clients[client_index].sock, "move\n");
    }
 }
 

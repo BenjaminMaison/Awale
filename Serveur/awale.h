@@ -24,7 +24,7 @@ typedef struct Game{
     int player2;
 } Game;
 
-void init();
+void initGameState(GameState* game);
 GameState playTurn(GameState*game, int hole);
 int isLegal(GameState* game, int hole);
 int isOpponentStarving(GameState* game);

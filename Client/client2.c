@@ -4,7 +4,8 @@
 #include <string.h>
 
 #include "client2.h"
-#include "../Serveur/awale.h"
+#include "awale.h"
+#include "../request.h"
 
 static void init(void)
 {
@@ -26,8 +27,10 @@ static void end(void)
 #endif
 }
 
-enum State {MENU, CONNECTED, GAME, END};
+enum State {MENU,CHOOSE_PLAYER,CONNECTED ,GAME, END};
 typedef enum State State;
+
+GameState gameState;
 
 State state = MENU;
 
@@ -42,6 +45,7 @@ static void app(const char *address, const char *name)
    write_server(sock, name);
 
    menu_initial();
+   //state = GAME;
 
    while(1)
    {
@@ -93,7 +97,7 @@ static void app(const char *address, const char *name)
             server_update(sock, buffer);
          }
 
-         puts(buffer);
+         //puts(buffer);
       }
    }
 
@@ -165,17 +169,43 @@ void user_update(SOCKET sock,char* buffer)
 {
    switch (state) {
       case MENU:
-            if(strcmp(buffer, "1") == 0){
-               write_server(sock, "listPlayers");
-            }
-            break;
+         /*
+         1. List players
+         */
+         if(strcmp(buffer, "1") == 0){
+            write_server(sock, actions[LIST_PLAYERS]);
+            state = CHOOSE_PLAYER;
+         }
+         break;
+      case CHOOSE_PLAYER:
+         char temp[BUF_SIZE];
+         strcat(&temp, actions[CHOOSE_PLAYER]);
+         strcat(&temp, buffer);
+         printf("%s\n", temp);
+         write_server(sock, buffer);
+         break;
       case CONNECTED:
-            menu_connected();
-            break;
+         /*
+         0. Back to menu
+         1. Choose player
+         */
+         menu_connected();
+         if(strcmp(buffer, "1") == 0){
+            write_server(sock, actions[START_GAME]);
+         }
+         break;
       case GAME:
-            break;
+         // when the user plays a move he enters the hole letter between A and F or a and f
+         if(strlen(buffer) == 2 && (buffer[0] >= 'A' && buffer[0] <= 'F') || (buffer[0] >= 'a' && buffer[0] <= 'f')){
+            char temp[BUF_SIZE];
+            strcat(&temp, actions[MOVE]);
+            strcat(&temp, buffer);
+            printf("%s\n", temp);
+            write_server(sock, buffer);
+         }
+         break;
       default:
-            break;
+         break;
    }
 }
 
@@ -185,11 +215,20 @@ void server_update(SOCKET sock, char* buffer)
    char temp[BUF_SIZE];
    strcpy(temp, buffer);
    char* cmd = strtok(temp, "\n");
-   printf("Command : %s\n", cmd);
+   printf("[SERVER COMMAND] %s\n", cmd);
    switch (state) {
       case MENU:
+         if(strcmp(cmd, "connect") == 0){
+            state = CONNECTED;
+         }
+         break;
+      case CHOOSE_PLAYER:
          if(strcmp(cmd, "listPlayers") == 0){
             displayPlayers(buffer);
+         }
+         if(strcmp(cmd, "startGame") == 0){
+            state = GAME;
+            printf("Game started\n");
          }
          break;
       case CONNECTED:
@@ -198,7 +237,7 @@ void server_update(SOCKET sock, char* buffer)
       case GAME:
          if(strcmp(cmd, "gameState") == 0){
             GameState gameState;
-            parseGameState(buffer, &gameState);
+            deserializeGameState(buffer, &gameState);
             display(&gameState);
          }
 
@@ -240,12 +279,14 @@ static void action(SOCKET sock, char* buffer){
 }
 
 static void displayPlayers(char* buffer){
-   char* players = strtok(buffer, " ");
-    while ( players != NULL ) {
-        printf ( "%s\n", players );
-        // On demande le token suivant.
-        players = strtok ( NULL, " " );
-    }
+   printf("Players online :\n");
+   char* players = strtok(buffer, "\n");
+   players = strtok ( NULL, "\n" );
+   while ( players != NULL ) {
+      printf ( "%s\n", players );
+      // On demande le token suivant.
+      players = strtok ( NULL, "\n" );
+   }
 }
 
 /**

@@ -4,7 +4,7 @@
 
 //GameState game;
 
-void init(GameState* game) 
+void initGameState(GameState* game) 
 {
     // Initialize the game state
     game->score[0] = 0;
