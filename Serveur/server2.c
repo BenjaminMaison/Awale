@@ -234,17 +234,29 @@ static void write_client(SOCKET sock, const char *buffer)
 
 static void action(const char *buffer, Client *clients, int actual, SOCKET sock){
    printf("action\n");
-   if(strcmp(buffer,"getListPlayers")){
-      write_client(sock, "listPlayers");
-      int i = 0;
+   char toSend[BUF_SIZE];
+   if(strcmp("getListPlayers", buffer) == 0){
+      // write_client(sock, "listPlayers");
+      strncpy(toSend, "listPlayers:", BUF_SIZE-1);
+      // char str[10];
+      // snprintf(str, sizeof(str), "%d", actual);
+      // printf("%s\n", str);
+      // write_client(sock, str);
+      // int i = 0;
+      // for(i = 0; i<actual; i++){
+      //    write_client(sock, clients[i].name);
+      //    printf("%s\n",clients[i].name);
+      // }
+      // printf("end\n");
+      int i;
       for(i = 0; i<actual; i++){
-         printf("%d\n", i);
-         write_client(sock, clients[i].name);
-         printf("%d\n", actual);
          printf("%s\n",clients[i].name);
+         strncat(toSend, clients[i].name, sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
       }
-      printf("end");
-      write_client(sock, "end");
+
+      write_client(sock, toSend);
+      printf("%s\n",toSend);
    }
 }
 

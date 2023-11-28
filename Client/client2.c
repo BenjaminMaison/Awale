@@ -83,8 +83,6 @@ static void app(const char *address, const char *name)
          }else{
             action(sock, buffer);
          }
-
-         puts(buffer);
       }
    }
 
@@ -166,7 +164,7 @@ static void menu(SOCKET sock, int state)
       switch (choix) {
          case 1:
                printf("Vous avez choisi de vous connecter à un autre joueur!\n");
-               write_server(sock, "getListPlayer");
+               write_server(sock, "getListPlayers");
                break;
          default:
                printf("Choix invalide. Veuillez entrer un numéro valide.\n");
@@ -174,30 +172,30 @@ static void menu(SOCKET sock, int state)
    }
 
 static void action(SOCKET sock, char* buffer){
-   // char *action = strtok(buffer, " ");
+   char *token = strtok(buffer, ":");
    // char newBuffer[BUF_SIZE];
    //  strcpy(newBuffer, buffer + strlen(action) + 1);
-    if (strcmp(buffer, "listPlayers"))
+   printf("%s\n", token);
+    if (strcmp("listPlayers", token) == 0)
     {
-      printf("hello listPlayers\n");
-      read_server(sock, buffer);
-      
-      while (!strcmp(buffer, "end")) {
-         printf ( "Player : %s\n", buffer);
-         read_server(sock, buffer);
+      // printf("hello listPlayers\n");
+      // read_server(sock, buffer);
+      // int actual = atoi(buffer);
+      // printf("actual %s\n actual int", buffer, actual);
+      // int i = 1;
+      // while (i <= actual) {
+      //    read_server(sock, buffer);
+      //    printf ( "Player %d : %s\n", i, buffer);
+      //    i++;
+      // }
+      token = strtok(NULL, ",");
+      while(token != NULL){
+         printf("Player : %s\n", token);
+         token = strtok(NULL, ",");
       }
-      printf ( "%s\n", buffer );
     }
 }
 
-static void displayPlayers(char* buffer){
-   char* players = strtok(buffer, " ");
-    while ( players != NULL ) {
-        printf ( "%s\n", players );
-        // On demande le token suivant.
-        players = strtok ( NULL, " " );
-    }
-}
 
 
 
