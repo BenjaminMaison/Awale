@@ -194,6 +194,11 @@ static void displayPlayers(char* buffer){
    }
 }
 
+static void connectToPlayer(SOCKET sock){
+   printf("Choissiez un joueur à qui vous connecter\n");
+
+}
+
 
 
 int main(int argc, char **argv)
