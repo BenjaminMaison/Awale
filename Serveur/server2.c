@@ -29,7 +29,7 @@ static void end(void)
 static void app(void)
 {
    SOCKET sock = init_connection();
-   char buffer[BUF_SIZE];
+   char  buffer[BUF_SIZE];
    /* the index for the array */
    int actual = 0;
    int max = sock;
@@ -93,6 +93,7 @@ static void app(void)
 
          Client c = { csock };
          strncpy(c.name, buffer, BUF_SIZE - 1);
+         printf("Hello %s\n", c.name);
          clients[actual] = c;
          actual++;
       }
@@ -106,7 +107,6 @@ static void app(void)
             {
                Client client = clients[i];
                int c = read_client(clients[i].sock, buffer);
-               printf("hellooo\n");
 
                /* client disconnected */
                if(c == 0)
@@ -119,8 +119,9 @@ static void app(void)
                }
                else
                {
+                  printf("before action\n");
                   printf("%s\n", buffer);
-                  // action(buffer, clients, actual);
+                  action(buffer, clients, actual, clients[i].sock);
                   // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
@@ -231,16 +232,20 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-static char* action(char* buffer, Client* clients, int actual){
+static void action(const char *buffer, Client *clients, int actual, SOCKET sock){
+   printf("action\n");
    if(strcmp(buffer,"getListPlayers")){
-      char* toSend = "listPlayers";
-      // for(int i = 0; i<actual; i++){
-      //    strcat(toSend, " ");
-      //    strcat(toSend, clients[i].name);
-      // }
-      return toSend;
+      write_client(sock, "listPlayers");
+      int i = 0;
+      for(i = 0; i<actual; i++){
+         printf("%d\n", i);
+         write_client(sock, clients[i].name);
+         printf("%d\n", actual);
+         printf("%s\n",clients[i].name);
+      }
+      printf("end");
+      write_client(sock, "end");
    }
-   return NULL;
 }
 
 int main(int argc, char **argv)

@@ -30,12 +30,12 @@ static void app(const char *address, const char *name)
    SOCKET sock = init_connection(address);
    char buffer[BUF_SIZE];
 
-   menu(sock, 0);
-
    fd_set rdfs;
 
    /* send our name */
    write_server(sock, name);
+
+   menu(sock, 0);
 
    while(1)
    {
@@ -80,7 +80,10 @@ static void app(const char *address, const char *name)
          {
             printf("Server disconnected !\n");
             break;
+         }else{
+            action(sock, buffer);
          }
+
          puts(buffer);
       }
    }
@@ -170,13 +173,20 @@ static void menu(SOCKET sock, int state)
       }
    }
 
-static void action(char* buffer){
-   char *action = strtok(buffer, " ");
-   char newBuffer[BUF_SIZE];
-    strcpy(newBuffer, buffer + strlen(action) + 1);
-    if (strcmp(action, "listPlayers"))
+static void action(SOCKET sock, char* buffer){
+   // char *action = strtok(buffer, " ");
+   // char newBuffer[BUF_SIZE];
+   //  strcpy(newBuffer, buffer + strlen(action) + 1);
+    if (strcmp(buffer, "listPlayers"))
     {
-        displayPlayers(newBuffer);
+      printf("hello listPlayers\n");
+      read_server(sock, buffer);
+      
+      while (!strcmp(buffer, "end")) {
+         printf ( "Player : %s\n", buffer);
+         read_server(sock, buffer);
+      }
+      printf ( "%s\n", buffer );
     }
 }
 
