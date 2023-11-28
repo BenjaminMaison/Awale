@@ -224,21 +224,26 @@ void menu_connected()
 }
 
 static void displayPlayers(char* buffer){
-   printf("Display players\n");
-   char* token = strtok(buffer, ",");
-   int i = 0;
-   while(token != NULL){
-      printf("Player %d: %s\n", i, token);
-      i++;
-      token = strtok(NULL, ",");
-   }
+   char* players = strtok(buffer, " ");
+    while ( players != NULL ) {
+        printf ( "%s\n", players );
+        // On demande le token suivant.
+        players = strtok ( NULL, " " );
+    }
 }
 
 static void connectToPlayer(SOCKET sock){
 
 }
 
-int parseGameState(const char* buffer, GameState* gameState) {
+/**
+ * @brief Deserialize a game state from a buffer
+ * 
+ * @param buffer 
+ * @param gameState 
+ * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
+ */
+int deserializeGameState(const char* buffer, GameState* gameState) {
    const char * separators = "\n ";
    char* token = strtok(buffer, separators);
    if(strcmp(token, "gameState") != 0){
@@ -268,6 +273,37 @@ int parseGameState(const char* buffer, GameState* gameState) {
 
    return EXIT_SUCCESS;  
 }
+
+/**
+ * @brief  Serialize a game state into a buffer
+ * 
+ * @param gameState 
+ * @param buffer 
+ * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
+ */
+int serializeGameState(const GameState* gameState, char* buffer){
+   char temp[BUF_SIZE];
+   strcpy(buffer, "gameState\n");
+   for(int i = 0; i < NUM_HOLES; i++){
+      sprintf(temp, "%d ", gameState->board[0][i]);
+      strcat(buffer, temp);
+   }
+   strcat(buffer, "\n");
+   for(int i = 0; i < NUM_HOLES; i++){
+      sprintf(temp, "%d ", gameState->board[1][i]);
+      strcat(buffer, temp);
+   }
+   strcat(buffer, "\n");
+   sprintf(temp, "%d\n", gameState->currentPlayer);
+   strcat(buffer, temp);
+   sprintf(temp, "%d\n", gameState->score[0]);
+   strcat(buffer, temp);
+   sprintf(temp, "%d\n", gameState->score[1]);
+   strcat(buffer, temp);
+   return EXIT_SUCCESS;
+}
+
+
 
 int main(int argc, char **argv)
 {
