@@ -27,7 +27,7 @@ static void end(void)
 #endif
 }
 
-enum State {MENU,CHOOSE_PLAYER,CONNECTED ,GAME, END};
+enum State {MENU, CONNECTION_REQUEST, CHOOSE_PLAYER, CONNECTED, GAME, END};
 typedef enum State State;
 
 GameState gameState;
@@ -173,16 +173,33 @@ void user_update(SOCKET sock,char* buffer)
          1. List players
          */
          if(strcmp(buffer, "1") == 0){
+            printf("List players\n");
             write_server(sock, actions[LIST_PLAYERS]);
             state = CHOOSE_PLAYER;
+            printf("[STATE] CHOOSE_PLAYER\n");
+         }
+         break;
+      case CONNECTION_REQUEST:
+         if(strcmp(buffer, "y") == 0){
+            char temp[BUF_SIZE] = "";
+            strcat(&temp, "connectionResponse\n");
+            strcat(&temp, "true\n");
+            write_server(sock, &temp);
+         }
+         else if(strcmp(buffer, "n") == 0){
+            state = MENU;
+            printf("[STATE] MENU\n");
+            char temp[BUF_SIZE] = "";
+            strcat(&temp, "connectionResponse\n");
+            strcat(&temp, "false\n");
+            write_server(sock, &temp);
          }
          break;
       case CHOOSE_PLAYER:
-         char temp[BUF_SIZE];
-         strcat(&temp, actions[CHOOSE_PLAYER]);
+         char temp[BUF_SIZE] = "";
+         strcat(&temp, "connect\n");
          strcat(&temp, buffer);
-         printf("%s\n", temp);
-         write_server(sock, buffer);
+         write_server(sock, &temp);
          break;
       case CONNECTED:
          /*
@@ -219,23 +236,56 @@ void server_update(SOCKET sock, char* buffer)
    switch (state) {
       case MENU:
          if(strcmp(cmd, "connect") == 0){
-            state = CONNECTED;
+            state = CONNECTION_REQUEST;
+            printf("[STATE] CONNECTION_REQUEST\n");
+            char* token = strtok(buffer, "\n");
+            token = strtok(NULL, "\n");
+            printf("Connection request from %s\n", token);
+            printf("Accept ? (y/n)\n");
+         }
+         break;
+      case CONNECTION_REQUEST:
+         if(strcmp(cmd, "connected") == 0){
+            char* token = strtok(buffer, "\n");
+            token = strtok(NULL, "\n");
+            if(strcmp(token, "true") == 0){
+               state = CONNECTED;
+               printf("Connected\n");
+            }
+            else{
+               printf("Connection with player failed\n");
+               state = MENU;
+            }
          }
          break;
       case CHOOSE_PLAYER:
          if(strcmp(cmd, "listPlayers") == 0){
             displayPlayers(buffer);
+            printf("Choose player : \n");
          }
+         else if(strcmp(cmd, "connected") == 0)
+         {
+            char* token = strtok(buffer, "\n");
+            token = strtok(NULL, "\n");
+            if(strcmp(token, "true") == 0){
+               state = CONNECTED;
+               printf("Connected\n");
+            }
+            else{
+               printf("Connection with player failed\n");
+               state = MENU;
+            }
+         }
+         break;
+      case CONNECTED:
          if(strcmp(cmd, "startGame") == 0){
             state = GAME;
             printf("Game started\n");
          }
          break;
-      case CONNECTED:
-         menu_connected();
-         break;
       case GAME:
          if(strcmp(cmd, "gameState") == 0){
+            // refresg
             GameState gameState;
             deserializeGameState(buffer, &gameState);
             display(&gameState);

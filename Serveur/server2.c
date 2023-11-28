@@ -6,6 +6,7 @@
 #include "server2.h"
 #include "client2.h"
 #include "awale.h"
+#include "../request.h"
 
  /* an array for all games */
 int nbGames = 0;
@@ -243,7 +244,7 @@ static void action(const char *buffer, Client *clients, int actual, int client_i
    char* action = strtok(temp, "\n");
    printf("[CLIENT %d REQUEST] %s\n", client_index, action);
 
-   if(strcmp(action,"getListPlayers")){
+   if(strcmp(action, actions[LIST_PLAYERS]) == 0){
       char listPlayers[BUF_SIZE] = "";
       strcat(&listPlayers, "listPlayers\n");
       for(int i = 0; i < actual; i++){
@@ -252,6 +253,37 @@ static void action(const char *buffer, Client *clients, int actual, int client_i
          strcat(&listPlayers, "\n");
       }
       write_client(clients[client_index].sock, listPlayers);
+   }
+   else if(strcmp(action, actions[CONNECT]) == 0){
+      char* opponent = strtok(buffer, "\n");
+      opponent = strtok(NULL, "\n");
+      int opponent_index = getClientIndex(opponent, clients, actual);
+      if(opponent_index < actual){
+         SOCKET sockOpponent = clients[opponent_index].sock;
+         char connect[BUF_SIZE] = "";
+         strcat(&connect, "connect\n");
+         strcat(&connect, clients[client_index].name);
+         strcat(&connect, "\n");
+         write_client(sockOpponent, connect);
+      }
+   }
+   else if(strcmp(action, "connectionResponse") == 0){
+      // write message to client
+      char* resp = strtok(buffer, "\n");
+      resp = strtok(NULL, "\n");
+      char response[BUF_SIZE] = "";
+      strcat(&response, "connected\n");
+      if(strcmp(resp, "true") == 0){
+         strcat(&response, "true\n");
+      }
+      else{
+         strcat(&response, "false\n");
+      }
+      send_message_to_all_clients(clients, clients[client_index],actual, response, 1);
+
+   }
+   else if(strcmp(action, actions[DISCONNECT]) == 0){
+      write_client(clients[client_index].sock, "disconnect\n");
    }
    else if(strcmp(action, "startGame") == 0)
    {
@@ -276,6 +308,15 @@ static void action(const char *buffer, Client *clients, int actual, int client_i
    {
       write_client(clients[client_index].sock, "move\n");
    }
+}
+
+int getClientIndex(char * name, Client * clients, int actual){
+   for(int i = 0; i < actual; i++){
+      if(strcmp(name, clients[i].name) == 0){
+         return i;
+      }
+   }
+   return -1;
 }
 
 int main(int argc, char **argv)
