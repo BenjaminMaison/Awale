@@ -2,3 +2,6 @@
 client
 server
 awale
+
+# ide
+.vscode
