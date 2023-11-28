@@ -173,29 +173,26 @@ static void menu(SOCKET sock, int state)
 
 static void action(SOCKET sock, char* buffer){
    char *token = strtok(buffer, ":");
-   // char newBuffer[BUF_SIZE];
-   //  strcpy(newBuffer, buffer + strlen(action) + 1);
    printf("%s\n", token);
+   // char newBuffer[BUF_SIZE] ;
+   // strncpy(newBuffer, buffer, sizeof(buffer), );
     if (strcmp("listPlayers", token) == 0)
     {
-      // printf("hello listPlayers\n");
-      // read_server(sock, buffer);
-      // int actual = atoi(buffer);
-      // printf("actual %s\n actual int", buffer, actual);
-      // int i = 1;
-      // while (i <= actual) {
-      //    read_server(sock, buffer);
-      //    printf ( "Player %d : %s\n", i, buffer);
-      //    i++;
-      // }
-      token = strtok(NULL, ",");
-      while(token != NULL){
-         printf("Player : %s\n", token);
-         token = strtok(NULL, ",");
-      }
+      displayPlayers(strtok(NULL, "\0"));
     }
 }
 
+
+static void displayPlayers(char* buffer){
+   printf("Display players\n");
+   char* token = strtok(buffer, ",");
+   int i = 0;
+   while(token != NULL){
+      printf("Player %d: %s\n", i, token);
+      i++;
+      token = strtok(NULL, ",");
+   }
+}
 
 
 
