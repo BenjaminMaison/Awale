@@ -121,7 +121,7 @@ static void app(void)
                {
                   printf("before action\n");
                   printf("%s\n", buffer);
-                  action(buffer, clients, actual, clients[i].sock);
+                  action(buffer, clients, actual, client);
                   // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
@@ -232,31 +232,28 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-static void action(const char *buffer, Client *clients, int actual, SOCKET sock){
+static void action(const char *buffer, Client *clients, int actual, int clientID,){
    printf("action\n");
    char toSend[BUF_SIZE];
-   if(strcmp("getListPlayers", buffer) == 0){
-      // write_client(sock, "listPlayers");
+   SOCKET sock = clients[clientID].sock;
+   char* token = strtok(buffer, ":");
+   if(strcmp("getListPlayers", token) == 0){
       strncpy(toSend, "listPlayers:", BUF_SIZE-1);
-      // char str[10];
-      // snprintf(str, sizeof(str), "%d", actual);
-      // printf("%s\n", str);
-      // write_client(sock, str);
-      // int i = 0;
-      // for(i = 0; i<actual; i++){
-      //    write_client(sock, clients[i].name);
-      //    printf("%s\n",clients[i].name);
-      // }
-      // printf("end\n");
       int i;
       for(i = 0; i<actual; i++){
          printf("%s\n",clients[i].name);
          strncat(toSend, clients[i].name, sizeof(toSend) - strlen(toSend) - 1);
          strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
       }
-
       write_client(sock, toSend);
       printf("%s\n",toSend);
+   }else if(strcmp("connectToPlayer", token) == 0){
+      token = strtok(NULL, "\0");
+      otherClientID = atoi(token);
+      if(clientID != otherClientID){
+         write_client(clients[otherClientID].sock, "Vous êtes connecté à qqun");
+         clients[clientID].connectedTo = otherClientID;
+      }
    }
 }
 

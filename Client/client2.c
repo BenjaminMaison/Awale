@@ -164,11 +164,14 @@ void user_update(SOCKET sock,char* buffer)
    switch (state) {
       case MENU:
             if(strcmp(buffer, "1") == 0){
-               write_server(sock, "listPlayers");
+               write_server(sock, "getListPlayers:");
             }
             break;
       case CONNECTED:
-            menu_connected();
+            char toSend[BUF_SIZE];
+            strcpy(toSend, "connectToPlayer:");
+            strcat(toSend, "buffer");
+            write_server(sock, toSend);
             break;
       case GAME:
             break;
@@ -220,32 +223,6 @@ void menu_connected()
    printf("Entrez le numéro du joueur : \n");
 }
 
-      int choix;
-      printf("\nVeuillez entrer le numéro de votre choix : ");
-      scanf("%d", &choix);
-
-      switch (choix) {
-         case 1:
-               printf("Vous avez choisi de vous connecter à un autre joueur!\n");
-               write_server(sock, "getListPlayers");
-               break;
-         default:
-               printf("Choix invalide. Veuillez entrer un numéro valide.\n");
-      }
-   }
-
-static void action(SOCKET sock, char* buffer){
-   char *token = strtok(buffer, ":");
-   printf("%s\n", token);
-   // char newBuffer[BUF_SIZE] ;
-   // strncpy(newBuffer, buffer, sizeof(buffer), );
-    if (strcmp("listPlayers", token) == 0)
-    {
-      displayPlayers(strtok(NULL, "\0"));
-    }
-}
-
-
 static void displayPlayers(char* buffer){
    printf("Display players\n");
    char* token = strtok(buffer, ",");
@@ -258,7 +235,6 @@ static void displayPlayers(char* buffer){
 }
 
 static void connectToPlayer(SOCKET sock){
-   printf("Choissiez un joueur à qui vous connecter\n");
 
 }
 
@@ -292,39 +268,6 @@ int parseGameState(const char* buffer, GameState* gameState) {
 
    return EXIT_SUCCESS;  
 }
-
-int parseGameState(const char* buffer, GameState* gameState) {
-   const char * separators = "\n ";
-   char* token = strtok(buffer, separators);
-   if(strcmp(token, "gameState") != 0){
-      printf("Error parsing game state\n");
-      return EXIT_FAILURE;
-   }
-
-   int row = 0;
-   int col = 0;
-   while( token != NULL && col < NUM_HOLES && row < 2) {
-      token = strtok ( NULL, separators );
-      gameState->board[row][col] = atoi(token);
-      col++;
-      if(col == NUM_HOLES){
-         col = 0;
-         row++;
-      }
-   }
-   token = strtok ( NULL, separators );
-   gameState->currentPlayer = atoi(token);
-   
-   token = strtok ( NULL, separators );
-   gameState->score[0] = atoi(token);
-
-   token = strtok ( NULL, separators );
-   gameState->score[1] = atoi(token);
-
-   return EXIT_SUCCESS;  
-}
-
-
 
 int main(int argc, char **argv)
 {
