@@ -19,9 +19,9 @@ typedef struct GameState{
 } GameState;
 
 void init();
-GameState playTurn(int hole);
-int isLegal(int hole);
-int isOpponentStarving(GameState game);
-int* getLegalMoves();
-int isFinished(); 
-void display();
+GameState playTurn(GameState*game, int hole);
+int isLegal(GameState* game, int hole);
+int isOpponentStarving(GameState* game);
+int* getLegalMoves(GameState* game);
+int isFinished(GameState* game); 
+void display(GameState* game);
