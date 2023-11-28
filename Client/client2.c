@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "client2.h"
+#include "../Serveur/awale.h"
 
 static void init(void)
 {
@@ -25,6 +26,11 @@ static void end(void)
 #endif
 }
 
+enum State {MENU, CONNECTED, GAME, END};
+typedef enum State State;
+
+State state = MENU;
+
 static void app(const char *address, const char *name)
 {
    SOCKET sock = init_connection(address);
@@ -35,7 +41,7 @@ static void app(const char *address, const char *name)
    /* send our name */
    write_server(sock, name);
 
-   menu(sock, 0);
+   menu_initial();
 
    while(1)
    {
@@ -53,25 +59,28 @@ static void app(const char *address, const char *name)
          exit(errno);
       }
 
-      // /* something from standard input : i.e keyboard */
-      // if(FD_ISSET(STDIN_FILENO, &rdfs))
-      // {
-      //    fgets(buffer, BUF_SIZE - 1, stdin);
-      //    {
-      //       char *p = NULL;
-      //       p = strstr(buffer, "\n");
-      //       if(p != NULL)
-      //       {
-      //          *p = 0;
-      //       }
-      //       else
-      //       {
-      //          /* fclean */
-      //          buffer[BUF_SIZE - 1] = 0;
-      //       }
-      //    }
-      //    write_server(sock, buffer);
-      // }
+      /* something from standard input : i.e keyboard */
+      if(FD_ISSET(STDIN_FILENO, &rdfs))
+      {
+         fgets(buffer, BUF_SIZE - 1, stdin);
+         {
+            char *p = NULL;
+            p = strstr(buffer, "\n");
+            if(p != NULL)
+            {
+               *p = 0;
+            }
+            else
+            {
+               /* fclean */
+               buffer[BUF_SIZE - 1] = 0;
+            }
+         }
+         if(strlen(buffer) > 0){
+            user_update(sock, buffer);
+         }
+         //write_server(sock, buffer);
+      }
       else if(FD_ISSET(sock, &rdfs))
       {
          int n = read_server(sock, buffer);
@@ -81,7 +90,7 @@ static void app(const char *address, const char *name)
             printf("Server disconnected !\n");
             break;
          }else{
-            action(sock, buffer);
+            server_update(sock, buffer);
          }
       }
    }
@@ -150,12 +159,66 @@ static void write_server(SOCKET sock, const char *buffer)
    }
 }
 
-static void menu(SOCKET sock, int state)
+void user_update(SOCKET sock,char* buffer)
+{
+   switch (state) {
+      case MENU:
+            if(strcmp(buffer, "1") == 0){
+               write_server(sock, "listPlayers");
+            }
+            break;
+      case CONNECTED:
+            menu_connected();
+            break;
+      case GAME:
+            break;
+      default:
+            break;
+   }
+}
+
+void server_update(SOCKET sock, char* buffer)
+{
+   // copy buffer
+   char temp[BUF_SIZE];
+   strcpy(temp, buffer);
+   char* cmd = strtok(temp, "\n");
+   printf("Command : %s\n", cmd);
+   switch (state) {
+      case MENU:
+         if(strcmp(cmd, "listPlayers") == 0){
+            displayPlayers(buffer);
+         }
+         break;
+      case CONNECTED:
+         menu_connected();
+         break;
+      case GAME:
+         if(strcmp(cmd, "gameState") == 0){
+            GameState gameState;
+            parseGameState(buffer, &gameState);
+            display(&gameState);
+         }
+
+         break;
+      default:
+         break;
+   }
+}
+
+void menu_initial()
 {
       printf("Bienvenue sur le jeu Awale!\n\n");
 
       printf("Menu :\n");
       printf("1. Se connecter à un autre joueur\n");
+}
+
+void menu_connected()
+{
+   printf("Menu :\n");
+   printf("Entrez le numéro du joueur : \n");
+}
 
       int choix;
       printf("\nVeuillez entrer le numéro de votre choix : ");
@@ -197,6 +260,68 @@ static void displayPlayers(char* buffer){
 static void connectToPlayer(SOCKET sock){
    printf("Choissiez un joueur à qui vous connecter\n");
 
+}
+
+int parseGameState(const char* buffer, GameState* gameState) {
+   const char * separators = "\n ";
+   char* token = strtok(buffer, separators);
+   if(strcmp(token, "gameState") != 0){
+      printf("Error parsing game state\n");
+      return EXIT_FAILURE;
+   }
+
+   int row = 0;
+   int col = 0;
+   while( token != NULL && col < NUM_HOLES && row < 2) {
+      token = strtok ( NULL, separators );
+      gameState->board[row][col] = atoi(token);
+      col++;
+      if(col == NUM_HOLES){
+         col = 0;
+         row++;
+      }
+   }
+   token = strtok ( NULL, separators );
+   gameState->currentPlayer = atoi(token);
+   
+   token = strtok ( NULL, separators );
+   gameState->score[0] = atoi(token);
+
+   token = strtok ( NULL, separators );
+   gameState->score[1] = atoi(token);
+
+   return EXIT_SUCCESS;  
+}
+
+int parseGameState(const char* buffer, GameState* gameState) {
+   const char * separators = "\n ";
+   char* token = strtok(buffer, separators);
+   if(strcmp(token, "gameState") != 0){
+      printf("Error parsing game state\n");
+      return EXIT_FAILURE;
+   }
+
+   int row = 0;
+   int col = 0;
+   while( token != NULL && col < NUM_HOLES && row < 2) {
+      token = strtok ( NULL, separators );
+      gameState->board[row][col] = atoi(token);
+      col++;
+      if(col == NUM_HOLES){
+         col = 0;
+         row++;
+      }
+   }
+   token = strtok ( NULL, separators );
+   gameState->currentPlayer = atoi(token);
+   
+   token = strtok ( NULL, separators );
+   gameState->score[0] = atoi(token);
+
+   token = strtok ( NULL, separators );
+   gameState->score[1] = atoi(token);
+
+   return EXIT_SUCCESS;  
 }
 
 

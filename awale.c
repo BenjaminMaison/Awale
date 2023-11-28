@@ -227,20 +227,20 @@ void refresh()
     printf("\033[0;0H");
 }
 
-int main()
-{
-    GameState game;
-    init(&game);
-    clear();
-    display(&game);
-    int hole;
-    while(!isFinished(&game)) {
-        printf("\nPlayer %d, choose a hole: ", game.currentPlayer);
-        scanf("%d", &hole);
-        game = playTurn(&game, hole);
-        refresh();
-        display(&game);
-    }
-    printf("Player %d wins!\n", game.score[0] > game.score[1] ? 0 : 1);
-    return 0;
-}
+// int main()
+// {
+//     GameState game;
+//     init(&game);
+//     clear();
+//     display(&game);
+//     int hole;
+//     while(!isFinished(&game)) {
+//         printf("\nPlayer %d, choose a hole: ", game.currentPlayer);
+//         scanf("%d", &hole);
+//         game = playTurn(&game, hole);
+//         refresh();
+//         display(&game);
+//     }
+//     printf("Player %d wins!\n", game.score[0] > game.score[1] ? 0 : 1);
+//     return 0;
+// }
