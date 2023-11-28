@@ -46,7 +46,7 @@ static void app(void)
 
    while(1)
    {
-      int i = 0;
+      int i = 0;  
       FD_ZERO(&rdfs);
 
       /* add STDIN_FILENO */
@@ -244,12 +244,12 @@ static void action(const char *buffer, Client *clients, int actual, int client_i
    printf("[CLIENT %d REQUEST] %s\n", client_index, action);
 
    if(strcmp(action,"getListPlayers")){
-      char listPlayers[BUF_SIZE];
-      strcat(listPlayers, "listPlayers\n");
+      char listPlayers[BUF_SIZE] = "";
+      strcat(&listPlayers, "listPlayers\n");
       for(int i = 0; i < actual; i++){
          //strcat(listPlayers, i);
-         strcat(listPlayers, clients[i].name);
-         strcat(listPlayers, "\n");
+         strcat(&listPlayers, &clients[i].name);
+         strcat(&listPlayers, "\n");
       }
       write_client(clients[client_index].sock, listPlayers);
    }
