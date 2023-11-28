@@ -26,7 +26,7 @@ static void end(void)
 #endif
 }
 
-enum State {MENU, CONNECTED, GAME, END};
+enum State {MENU, CONNECTION, GAME, END, INVITATION};
 typedef enum State State;
 
 State state = MENU;
@@ -161,18 +161,26 @@ static void write_server(SOCKET sock, const char *buffer)
 
 void user_update(SOCKET sock,char* buffer)
 {
+   char toSend[BUF_SIZE];
    switch (state) {
       case MENU:
-            if(strcmp(buffer, "1") == 0){
+            if(strcmp("1", buffer) == 0){
                write_server(sock, "getListPlayers:");
             }
             break;
-      case CONNECTED:
-            char toSend[BUF_SIZE];
+      case CONNECTION:
             strcpy(toSend, "connectToPlayer:");
-            strcat(toSend, "buffer");
+            strcat(toSend, buffer);
             write_server(sock, toSend);
             break;
+      case INVITATION:
+      if(strcmp("1", buffer) == 0){
+         write_server(sock, "accept:");
+      }else if(strcmp("2", buffer) == 0){
+         write_server(sock, "refuse:");
+         menu_initial();
+      }
+      break;
       case GAME:
             break;
       default:
@@ -185,21 +193,37 @@ void server_update(SOCKET sock, char* buffer)
    // copy buffer
    char temp[BUF_SIZE];
    strcpy(temp, buffer);
-   char* cmd = strtok(temp, "\n");
+   char* cmd = strtok(temp, ":");
    printf("Command : %s\n", cmd);
    switch (state) {
       case MENU:
-         if(strcmp(cmd, "listPlayers") == 0){
-            displayPlayers(buffer);
+         if(strcmp("listPlayers", cmd) == 0){
+            displayPlayers(strtok(NULL, "\0"));
+         }else if(strcmp("invite", cmd) == 0){
+            menu_invitation(strtok(NULL, "\0"));
          }
          break;
-      case CONNECTED:
-         menu_connected();
+      case CONNECTION:
+         if(strcmp("error", cmd) == 0){
+            printf("Veuillez entrer le numéro d'un joueur correct\n");
+         }else if(strcmp("sent", cmd) == 0){
+            state = INVITATION;
+         }else if(strcmp("invite", cmd) == 0){
+            menu_invitation();
+         }
+         break;
+      case INVITATION:
+         if(strcmp("accepted", cmd) == 0){
+            printf("%s a accepté votre invitation !\n", strtok(NULL, "\0"));
+         }else if(strcmp("refused", cmd) == 0){
+            printf("%s a refusé votre invitation...\n", strtok(NULL, "\0"));
+            menu_initial();
+         }
          break;
       case GAME:
-         if(strcmp(cmd, "gameState") == 0){
+         if(strcmp("gameState", cmd) == 0){
             GameState gameState;
-            parseGameState(buffer, &gameState);
+            deserializeGameState(buffer, &gameState);
             display(&gameState);
          }
 
@@ -211,25 +235,38 @@ void server_update(SOCKET sock, char* buffer)
 
 void menu_initial()
 {
+      state = MENU;
       printf("Bienvenue sur le jeu Awale!\n\n");
 
       printf("Menu :\n");
       printf("1. Se connecter à un autre joueur\n");
 }
 
+void menu_invitation(char* name)
+{
+      state = INVITATION;
+      printf("%s vous a envoyé une invitation\n", name);
+      printf("1 - Accepter\n");
+      printf("2 - Refuser\n");
+}
+
 void menu_connected()
 {
+   state = CONNECTION;
    printf("Menu :\n");
    printf("Entrez le numéro du joueur : \n");
 }
 
 static void displayPlayers(char* buffer){
-   char* players = strtok(buffer, " ");
-    while ( players != NULL ) {
-        printf ( "%s\n", players );
-        // On demande le token suivant.
-        players = strtok ( NULL, " " );
-    }
+   printf("Display players\n");
+   char* token = strtok(buffer, ",");
+   int i = 1;
+   while(token != NULL){
+      printf("Player %d: %s\n", i, token);
+      i++;
+      token = strtok(NULL, ",");
+   }
+   menu_connected();
 }
 
 static void connectToPlayer(SOCKET sock){

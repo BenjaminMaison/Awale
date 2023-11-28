@@ -121,7 +121,7 @@ static void app(void)
                {
                   printf("before action\n");
                   printf("%s\n", buffer);
-                  action(buffer, clients, actual, client);
+                  action(buffer, clients, actual, i);
                   // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
@@ -232,7 +232,7 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-static void action(const char *buffer, Client *clients, int actual, int clientID,){
+static void action(const char *buffer, Client *clients, int actual, int clientID){
    printf("action\n");
    char toSend[BUF_SIZE];
    SOCKET sock = clients[clientID].sock;
@@ -249,12 +249,33 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       printf("%s\n",toSend);
    }else if(strcmp("connectToPlayer", token) == 0){
       token = strtok(NULL, "\0");
-      otherClientID = atoi(token);
-      if(clientID != otherClientID){
-         write_client(clients[otherClientID].sock, "Vous êtes connecté à qqun");
+      int otherClientID = atoi(token)-1;
+      if(otherClientID == -1 || clientID == otherClientID || otherClientID>=actual || otherClientID<0 || clients[otherClientID].connectedTo != NULL){
+         write_client(clients[clientID].sock, "error");
+      }else{
+         strncpy(toSend, "invite:", BUF_SIZE-1);
+         strncat(toSend, clients[clientID].name, sizeof(toSend) - strlen(toSend) - 1);
+         write_client(clients[otherClientID].sock, toSend);
+         write_client(clients[clientID].sock, "sent:");
          clients[clientID].connectedTo = otherClientID;
+         clients[otherClientID].connectedTo = clientID; 
       }
+   }else if(strcmp("accept", token) == 0){
+      int otherClientID = clients[clientID].connectedTo;
+      strncpy(toSend, "accepted:", BUF_SIZE-1);
+      strncat(toSend, clients[clientID].name, sizeof(toSend) - strlen(toSend) - 1);
+      write_client(clients[otherClientID].sock, toSend);
+   }else if(strcmp("refuse", token) == 0){
+      int otherClientID = clients[clientID].connectedTo;
+      strncpy(toSend, "refused:", BUF_SIZE-1);
+      strncat(toSend, clients[clientID].name, sizeof(toSend) - strlen(toSend) - 1);
+      write_client(clients[otherClientID].sock, toSend);
+      clients[clientID].connectedTo = NULL;
+      clients[otherClientID].connectedTo = NULL; 
    }
+
+
+
 }
 
 int main(int argc, char **argv)

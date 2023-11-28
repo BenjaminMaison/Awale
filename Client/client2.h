@@ -7,7 +7,6 @@
 #include <arpa/inet.h>
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
-#include "../Serveur/awale.h"
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
@@ -30,7 +29,6 @@ static void end_connection(int sock);
 static int read_server(SOCKET sock, char *buffer);
 static void write_server(SOCKET sock, const char *buffer);
 static void menu(SOCKET sock, int state);
-static void action( SOCKET sock, char* buffer);
 static void displayPlayers(char* buffer);
 
 #endif /* guard */
