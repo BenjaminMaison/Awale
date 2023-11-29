@@ -4,7 +4,8 @@
 #include <string.h>
 
 #include "client2.h"
-#include "../Serveur/awale.h"
+#include "awale.h"
+#include "../request.h"
 
 static void init(void)
 {
@@ -29,6 +30,8 @@ static void end(void)
 enum State {MENU, CONNECTION, GAME, END, INVITATION};
 typedef enum State State;
 
+GameState gameState;
+
 State state = MENU;
 
 static void app(const char *address, const char *name)
@@ -42,6 +45,7 @@ static void app(const char *address, const char *name)
    write_server(sock, name);
 
    menu_initial();
+   //state = GAME;
 
    while(1)
    {
@@ -182,9 +186,17 @@ void user_update(SOCKET sock,char* buffer)
       }
       break;
       case GAME:
-            break;
+         // when the user plays a move he enters the hole letter between A and F or a and f
+         if(strlen(buffer) == 2 && (buffer[0] >= 'A' && buffer[0] <= 'F') || (buffer[0] >= 'a' && buffer[0] <= 'f')){
+            char temp[BUF_SIZE];
+            strcat(&temp, actions[MOVE]);
+            strcat(&temp, buffer);
+            printf("%s\n", temp);
+            write_server(sock, buffer);
+         }
+         break;
       default:
-            break;
+         break;
    }
 }
 
@@ -194,7 +206,7 @@ void server_update(SOCKET sock, char* buffer)
    char temp[BUF_SIZE];
    strcpy(temp, buffer);
    char* cmd = strtok(temp, ":");
-   printf("Command : %s\n", cmd);
+   printf("[SERVER COMMAND] %s\n", cmd);
    switch (state) {
       case MENU:
          if(strcmp("listPlayers", cmd) == 0){
@@ -209,7 +221,7 @@ void server_update(SOCKET sock, char* buffer)
          }else if(strcmp("sent", cmd) == 0){
             state = INVITATION;
          }else if(strcmp("invite", cmd) == 0){
-            menu_invitation();
+            menu_invitation(strtok(NULL, "\0"));
          }
          break;
       case INVITATION:

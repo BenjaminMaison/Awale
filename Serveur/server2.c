@@ -5,6 +5,13 @@
 
 #include "server2.h"
 #include "client2.h"
+#include "awale.h"
+#include "../request.h"
+
+ /* an array for all games */
+int nbGames = 0;
+Game games[MAX_CLIENTS/2];
+
 
 static void init(void)
 {
@@ -40,7 +47,7 @@ static void app(void)
 
    while(1)
    {
-      int i = 0;
+      int i = 0;  
       FD_ZERO(&rdfs);
 
       /* add STDIN_FILENO */
@@ -119,8 +126,6 @@ static void app(void)
                }
                else
                {
-                  printf("before action\n");
-                  printf("%s\n", buffer);
                   action(buffer, clients, actual, i);
                   // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
@@ -225,6 +230,7 @@ static int read_client(SOCKET sock, char *buffer)
 
 static void write_client(SOCKET sock, const char *buffer)
 {
+   printf("[CLIENT RESPONSE] %s\n", buffer);
    if(send(sock, buffer, strlen(buffer), 0) < 0)
    {
       perror("send()");
@@ -273,9 +279,42 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       clients[clientID].connectedTo = NULL;
       clients[otherClientID].connectedTo = NULL; 
    }
+   else if(strcmp(action, "startGame") == 0)
+   {
+      char* opponent = strtok(NULL, "\n");
+      printf("Opponent %d\n", atoi(opponent));
+      int opponent_index = atoi(opponent);
+      if(opponent_index < actual)
+      {
+         SOCKET sockOpponent = clients[opponent_index].sock;
+         write_client(sockOpponent, "startGame\n");
+         GameState * gameState = &games[nbGames].state;
+         //initGameState(gameState);
+         games[nbGames].player1 = actual;
+         games[nbGames].player2 = opponent_index;
+         games[nbGames].state = *gameState;
+         nbGames++;
+         printf("Game %d\n", nbGames);
+      }
+      write_client(clients, "");
+   }
+   else if(strcmp(action, "move\n") == 0)
+   {
+      int opponent_index = clients[clientID].connectedTo;
+      write_client(clients[opponent_index].sock, "move\n");
+   }
 
 
 
+}
+
+int getClientIndex(char * name, Client * clients, int actual){
+   for(int i = 0; i < actual; i++){
+      if(strcmp(name, clients[i].name) == 0){
+         return i;
+      }
+   }
+   return -1;
 }
 
 int main(int argc, char **argv)
