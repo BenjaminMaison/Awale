@@ -269,10 +269,6 @@ static void displayPlayers(char* buffer){
    menu_connected();
 }
 
-static void connectToPlayer(SOCKET sock){
-
-}
-
 /**
  * @brief Deserialize a game state from a buffer
  * 
