@@ -1,3 +1,6 @@
+#ifndef AWALE_H
+#define AWALE_H
+
 #define NUM_HOLES 6
 
 /* Board visualisation
@@ -31,3 +34,5 @@ int isOpponentStarving(GameState* game);
 int* getLegalMoves(GameState* game);
 int isFinished(GameState* game); 
 void display(GameState* game);
+
+#endif /* guard */
