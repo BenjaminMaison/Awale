@@ -33,6 +33,6 @@ int isLegal(GameState* game, int hole);
 int isOpponentStarving(GameState* game);
 int* getLegalMoves(GameState* game);
 int isFinished(GameState* game); 
-void display(GameState* game);
+void displayGame(GameState* game, int player);
 
 #endif /* guard */

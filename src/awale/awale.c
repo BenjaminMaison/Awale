@@ -152,15 +152,15 @@ GameState playTurn(GameState* game, int hole) {
     return newGame;
 }
 
-void display(GameState *game)
+void displayGame(GameState *game, int player)
 {
     int currentPlayer = game->currentPlayer;
     printf("Player %d's turn\n", currentPlayer);
     printf("Score: %d - %d\n", game->score[0], game->score[1]);
     
     // Display the board
-    char topLabel = (currentPlayer == 0) ? 'A' : 'a';
-    char bottomLabel = (currentPlayer == 0) ? 'a' : 'A';
+    char topLabel = (player == 0) ? 'A' : 'a';
+    char bottomLabel = (player == 0) ? 'a' : 'A';
 
     // Print column labels
     printf("       ");
@@ -177,10 +177,10 @@ void display(GameState *game)
     printf("-----|\n");
 
     // Print upper part of the board
-    for(int i = (currentPlayer == 0) ? (NUM_HOLES - 1) : 0; 
-            (currentPlayer == 0) ? (i >= 0) : (i < NUM_HOLES); 
-            (currentPlayer == 0) ? (i--) : (i++)) {
-        printf("  |    %d  ", game->board[1 - currentPlayer][i]);
+    for(int i = (player == 0) ? (NUM_HOLES - 1) : 0; 
+            (player == 0) ? (i >= 0) : (i < NUM_HOLES); 
+            (player == 0) ? (i--) : (i++)) {
+        printf("  |    %d  ", game->board[1 - player][i]);
     }
 
     printf("  |\n");
@@ -192,10 +192,10 @@ void display(GameState *game)
     printf("-----|\n");
 
     // Print lower part of the board
-    for(int i = (currentPlayer == 0) ? (NUM_HOLES - 1) : 0; 
-            (currentPlayer == 0) ? (i >= 0) : (i < NUM_HOLES); 
-            (currentPlayer == 0) ? (i--) : (i++)) {
-        printf("  |    %d  ", game->board[currentPlayer][i]);
+    for(int i = (player == 0) ? (NUM_HOLES - 1) : 0; 
+            (player == 0) ? (i >= 0) : (i < NUM_HOLES); 
+            (player == 0) ? (i--) : (i++)) {
+        printf("  |    %d  ", game->board[player][i]);
     }
     printf("  |\n");
 
