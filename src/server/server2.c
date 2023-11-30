@@ -97,8 +97,10 @@ static void app(void)
 
          Client c = { csock };
          strncpy(c.name, buffer, BUF_SIZE - 1);
-         printf("Hello %s\n", c.name);
+         printf("[NEW CONNECTION] %s connected to the server\n", c.name);
          clients[actual] = c;
+         clients[actual].connectedTo = -1;
+         clients[actual].gameID = -1;
          actual++;
       }
       else
@@ -115,11 +117,18 @@ static void app(void)
                /* client disconnected */
                if(c == 0)
                {
+                  if(client.connectedTo != -1){
+                     char toSend[BUF_SIZE];
+                     strncpy(toSend, "disconnected:", BUF_SIZE-1);
+                     strncat(toSend, client.name, sizeof(toSend) - strlen(toSend) - 1);
+                     clients[client.connectedTo].connectedTo = -1;
+                     write_client(clients[client.connectedTo].sock, toSend);
+                  }
                   closesocket(clients[i].sock);
                   remove_client(clients, i, &actual);
-                  strncpy(buffer, client.name, BUF_SIZE - 1);
-                  strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  send_message_to_all_clients(clients, client, actual, buffer, 1);
+                  // strncpy(buffer, client.name, BUF_SIZE - 1);
+                  // strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
+                  // send_message_to_all_clients(clients, client, actual, buffer, 1);
                }
                else
                {
@@ -247,13 +256,21 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
          printf("%s\n",clients[i].name);
          strncat(toSend, clients[i].name, sizeof(toSend) - strlen(toSend) - 1);
          strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
+         if(i == clientID){
+            strncat(toSend, "you", sizeof(toSend) - strlen(toSend) - 1);
+         }else if(clients[i].connectedTo != -1){
+            strncat(toSend, "already in a game", sizeof(toSend) - strlen(toSend) - 1);
+         }else{
+            strncat(toSend, "online", sizeof(toSend) - strlen(toSend) - 1);
+         }
+         strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
       }
       write_client(sock, toSend);
       printf("%s\n",toSend);
    }else if(strcmp("connectToPlayer", token) == 0){
       token = strtok(NULL, "\0");
       int otherClientID = atoi(token)-1;
-      if(otherClientID == -1 || clientID == otherClientID || otherClientID>=actual || otherClientID<0 || clients[otherClientID].connectedTo != NULL){
+      if(clientID == otherClientID || otherClientID>=actual || otherClientID<0 || clients[otherClientID].connectedTo != -1){
          write_client(clients[clientID].sock, "error");
       }else{
          strncpy(toSend, "invite:", BUF_SIZE-1);
@@ -273,8 +290,15 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       strncpy(toSend, "refused:", BUF_SIZE-1);
       strncat(toSend, clients[clientID].name, sizeof(toSend) - strlen(toSend) - 1);
       write_client(clients[otherClientID].sock, toSend);
-      clients[clientID].connectedTo = NULL;
-      clients[otherClientID].connectedTo = NULL; 
+      clients[clientID].connectedTo = -1;
+      clients[otherClientID].connectedTo = -1; 
+   }else if(strcmp("cancel", token) == 0){
+      int otherClientID = clients[clientID].connectedTo;
+      strncpy(toSend, "cancel:", BUF_SIZE-1);
+      strncat(toSend, clients[clientID].name, sizeof(toSend) - strlen(toSend) - 1);
+      write_client(clients[otherClientID].sock, toSend);
+      clients[clientID].connectedTo = -1;
+      clients[otherClientID].connectedTo = -1; 
    }
    else if(strcmp("startGame", token) == 0)
    {
@@ -309,8 +333,8 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
             write_client(clients[clientID].sock, "draw:");
             write_client(clients[opponent_index].sock, "draw:");
          }
-         clients[clientID].gameID = NULL;
-         clients[opponent_index].gameID = NULL;
+         clients[clientID].gameID = -1;
+         clients[opponent_index].gameID = -1;
          nbGames--;
       }
       else{
@@ -322,12 +346,34 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
    }
    else if(strcmp("quit", token) == 0)
    {
-      if(clients[clientID].gameID != NULL){
+      if(clients[clientID].gameID != -1){
          int opponent_index = clients[clientID].connectedTo;
-         clients[clientID].gameID = NULL;
-         clients[opponent_index].gameID = NULL;
+         clients[clientID].gameID = -1;
+         clients[opponent_index].gameID = -1;
          nbGames--;
          write_client(clients[opponent_index].sock, "quit:");
+      }
+   }
+   else if(strcmp("exit", token) == 0)
+   {
+      int opponent_index = clients[clientID].connectedTo;
+      if(opponent_index != -1){
+         clients[clientID].connectedTo = -1;
+         clients[opponent_index].connectedTo = -1;
+         write_client(clients[opponent_index].sock, "exit:");
+      }
+   }
+   else if(strcmp("chat", token) == 0)
+   {
+      int opponent_index = clients[clientID].connectedTo;
+      printf("id de l'opponent %d", opponent_index);
+      if(opponent_index != -1){
+         token = strtok(NULL, "\0");
+         strncpy(toSend, "chat:", BUF_SIZE - 1);
+         strncat(toSend, clients[clientID].name, sizeof toSend - strlen(toSend) - 1);
+         strncat(toSend, " : ", sizeof toSend - strlen(toSend) - 1);
+         strncat(toSend, token, sizeof toSend - strlen(toSend) - 1);
+         write_client(clients[opponent_index].sock, toSend);
       }
    }
 }
@@ -371,7 +417,7 @@ int getClientIndex(char * name, Client * clients, int actual){
 
 int main(int argc, char **argv)
 {
-   printf("hello\n");
+   printf("[START] Server launched\n");
 
    init();
 
