@@ -5,6 +5,10 @@
 
 #include "../../include/client/client2.h"
 
+#ifdef DEBUG
+#define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
+
 static void init(void)
 {
 #ifdef WIN32
@@ -25,10 +29,11 @@ static void end(void)
 #endif
 }
 
-enum State {MENU, CONNECTION, GAME, END, INVITATION};
+enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED};
 typedef enum State State;
 
 GameState gameState;
+int player = 0;
 
 State state = MENU;
 
@@ -42,8 +47,8 @@ static void app(const char *address, const char *name)
    /* send our name */
    write_server(sock, name);
 
+   clear();
    menu_initial();
-   //state = GAME;
 
    while(1)
    {
@@ -81,7 +86,6 @@ static void app(const char *address, const char *name)
          if(strlen(buffer) > 0){
             user_update(sock, buffer);
          }
-         //write_server(sock, buffer);
       }
       else if(FD_ISSET(sock, &rdfs))
       {
@@ -176,21 +180,48 @@ static void user_update(SOCKET sock,char* buffer)
             write_server(sock, toSend);
             break;
       case INVITATION:
-      if(strcmp("1", buffer) == 0){
-         write_server(sock, "accept:");
-      }else if(strcmp("2", buffer) == 0){
-         write_server(sock, "refuse:");
-         menu_initial();
-      }
-      break;
+         if(strcmp("1", buffer) == 0){
+            write_server(sock, "accept:");
+            clear();
+            menu_connected();
+         }else if(strcmp("2", buffer) == 0){
+            write_server(sock, "refuse:");
+            clear();
+            menu_initial();
+         }
+         break;
+      case CONNECTED:
+         if(strcmp("1", buffer) == 0){
+            write_server(sock, "startGame:");
+            clear();
+            printf("You started a game.\n");
+            initGameState(&gameState);
+            player = 0;
+            menu_game();
+         }
+         break;
       case GAME:
-         // when the user plays a move he enters the hole letter between A and F or a and f
-         if(strlen(buffer) == 2 && (buffer[0] >= 'A' && buffer[0] <= 'F') || (buffer[0] >= 'a' && buffer[0] <= 'f')){
-            char temp[BUF_SIZE];
-            strcat(&temp, actions[MOVE]);
-            strcat(&temp, buffer);
-            printf("%s\n", temp);
-            write_server(sock, buffer);
+         if(strlen(buffer) == 1 && (buffer[0] >= '0' && buffer[0] <= '5')){
+            if(gameState.currentPlayer != player){
+               printf("It's not your turn !\n");
+            }
+            else if(!isLegal(&gameState, atoi(buffer))){
+               printf("Illegal move !\n");
+            }
+            else
+            {
+               strcpy(toSend, "move:");
+               strcat(toSend, buffer);
+               write_server(sock, toSend);
+            }
+         }
+         else if(strcmp("quit", buffer) == 0){
+            write_server(sock, "quit:");
+            clear();
+            menu_connected();
+         }
+         else {
+            printf("Please enter a number between 0 and 6. Enter 'quit' to exit the game\n");
          }
          break;
       default:
@@ -204,39 +235,76 @@ static void server_update(SOCKET sock, char* buffer)
    char temp[BUF_SIZE];
    strcpy(temp, buffer);
    char* cmd = strtok(temp, ":");
-   printf("[SERVER COMMAND] %s\n", cmd);
+   #ifdef DEBUG
+   debug("[SERVER COMMAND] %s\n", cmd);
+   #endif
    switch (state) {
       case MENU:
          if(strcmp("listPlayers", cmd) == 0){
+            clear();
             displayPlayers(strtok(NULL, "\0"));
          }else if(strcmp("invite", cmd) == 0){
+            clear();
             menu_invitation(strtok(NULL, "\0"));
          }
          break;
       case CONNECTION:
          if(strcmp("error", cmd) == 0){
-            printf("Veuillez entrer le numéro d'un joueur correct\n");
+            printf("Please enter a correct player number\n");
          }else if(strcmp("sent", cmd) == 0){
             state = INVITATION;
          }else if(strcmp("invite", cmd) == 0){
+            clear();
             menu_invitation(strtok(NULL, "\0"));
          }
          break;
       case INVITATION:
          if(strcmp("accepted", cmd) == 0){
-            printf("%s a accepté votre invitation !\n", strtok(NULL, "\0"));
+            clear();
+            printf("%s accepted your invitation !\n", strtok(NULL, "\0"));
+            menu_connected();
          }else if(strcmp("refused", cmd) == 0){
-            printf("%s a refusé votre invitation...\n", strtok(NULL, "\0"));
+            clear();
+            printf("%s refused your invitation...\n", strtok(NULL, "\0"));
             menu_initial();
+         }
+         break;
+      case CONNECTED:
+         if(strcmp("gameStarted", cmd) == 0){
+            clear();
+            printf("Your opponent has started a game.\n");
+            initGameState(&gameState);
+            player = 1;
+            menu_game();
          }
          break;
       case GAME:
          if(strcmp("gameState", cmd) == 0){
-            GameState gameState;
             deserializeGameState(buffer, &gameState);
-            display(&gameState);
+            clear();
+            displayGame(&gameState, player);
          }
-
+         else if(strcmp("win", cmd) == 0)
+         {
+            printf("You won !\n");
+            menu_connected();
+         }
+         else if(strcmp("lose", cmd) == 0)
+         {
+            printf("You lost !\n");
+            menu_connected();
+         }
+         else if(strcmp("draw", cmd) == 0)
+         {
+            printf("It's a draw !\n");
+            menu_connected();
+         }
+         else if(strcmp("quit", cmd) == 0)
+         {
+            clear();
+            printf("Your opponent quit the game !\n");
+            menu_connected();
+         }
          break;
       default:
          break;
@@ -245,26 +313,38 @@ static void server_update(SOCKET sock, char* buffer)
 
 static void menu_initial()
 {
-      state = MENU;
-      printf("Bienvenue sur le jeu Awale!\n\n");
+   state = MENU;
+   printf("Bienvenue sur le jeu Awale!\n\n");
 
-      printf("Menu :\n");
-      printf("1. Se connecter à un autre joueur\n");
+   printf("Menu :\n");
+   printf("1. Se connecter à un autre joueur\n");
 }
 
 static void menu_invitation(char* name)
 {
-      state = INVITATION;
-      printf("%s vous a envoyé une invitation\n", name);
-      printf("1 - Accepter\n");
-      printf("2 - Refuser\n");
+   state = INVITATION;
+   printf("%s vous a envoyé une invitation\n", name);
+   printf("1 - Accepter\n");
+   printf("2 - Refuser\n");
+}
+
+static void menu_connection()
+{
+   state = CONNECTION;
+   printf("Entrez le numéro du joueur : \n");
 }
 
 static void menu_connected()
 {
-   state = CONNECTION;
+   state = CONNECTED;
    printf("Menu :\n");
-   printf("Entrez le numéro du joueur : \n");
+   printf("1. Commencer la partie\n");
+}
+
+static void menu_game()
+{
+   state = GAME;
+   displayGame(&gameState, player);
 }
 
 static void displayPlayers(char* buffer){
@@ -276,7 +356,7 @@ static void displayPlayers(char* buffer){
       i++;
       token = strtok(NULL, ",");
    }
-   menu_connected();
+   menu_connection();
 }
 
 /**
@@ -287,7 +367,7 @@ static void displayPlayers(char* buffer){
  * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
  */
 static int deserializeGameState(const char* buffer, GameState* gameState) {
-   const char * separators = "\n ";
+   const char * separators = "\n :";
    char* token = strtok(buffer, separators);
    if(strcmp(token, "gameState") != 0){
       printf("Error parsing game state\n");
@@ -316,36 +396,6 @@ static int deserializeGameState(const char* buffer, GameState* gameState) {
 
    return EXIT_SUCCESS;  
 }
-
-/**
- * @brief  Serialize a game state into a buffer
- * 
- * @param gameState 
- * @param buffer 
- * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
- */
-static int serializeGameState(const GameState* gameState, char* buffer){
-   char temp[BUF_SIZE];
-   strcpy(buffer, "gameState\n");
-   for(int i = 0; i < NUM_HOLES; i++){
-      sprintf(temp, "%d ", gameState->board[0][i]);
-      strcat(buffer, temp);
-   }
-   strcat(buffer, "\n");
-   for(int i = 0; i < NUM_HOLES; i++){
-      sprintf(temp, "%d ", gameState->board[1][i]);
-      strcat(buffer, temp);
-   }
-   strcat(buffer, "\n");
-   sprintf(temp, "%d\n", gameState->currentPlayer);
-   strcat(buffer, temp);
-   sprintf(temp, "%d\n", gameState->score[0]);
-   strcat(buffer, temp);
-   sprintf(temp, "%d\n", gameState->score[1]);
-   strcat(buffer, temp);
-   return EXIT_SUCCESS;
-}
-
 
 
 int main(int argc, char **argv)

@@ -236,10 +236,10 @@ static void write_client(SOCKET sock, const char *buffer)
 }
 
 static void action(const char *buffer, Client *clients, int actual, int clientID){
-   printf("action\n");
    char toSend[BUF_SIZE];
    SOCKET sock = clients[clientID].sock;
    char* token = strtok(buffer, ":");
+   printf("[ACTION] %s\n", token);
    if(strcmp("getListPlayers", token) == 0){
       strncpy(toSend, "listPlayers:", BUF_SIZE-1);
       int i;
@@ -276,33 +276,88 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       clients[clientID].connectedTo = NULL;
       clients[otherClientID].connectedTo = NULL; 
    }
-   else if(strcmp(action, "startGame") == 0)
-   {
-      char* opponent = strtok(NULL, "\n");
-      printf("Opponent %d\n", atoi(opponent));
-      int opponent_index = atoi(opponent);
-      if(opponent_index < actual)
-      {
-         SOCKET sockOpponent = clients[opponent_index].sock;
-         write_client(sockOpponent, "startGame\n");
-         GameState * gameState = &games[nbGames].state;
-         //initGameState(gameState);
-         games[nbGames].player1 = actual;
-         games[nbGames].player2 = opponent_index;
-         games[nbGames].state = *gameState;
-         nbGames++;
-         printf("Game %d\n", nbGames);
-      }
-      write_client(clients, "");
-   }
-   else if(strcmp(action, "move\n") == 0)
+   else if(strcmp("startGame", token) == 0)
    {
       int opponent_index = clients[clientID].connectedTo;
-      write_client(clients[opponent_index].sock, "move\n");
+      GameState * gameState = &games[nbGames].state;
+      initGameState(gameState);
+      games[nbGames].player1 = clientID;
+      games[nbGames].player2 = opponent_index;
+      games[nbGames].state.currentPlayer = 0;
+      clients[clientID].gameID = nbGames;
+      clients[opponent_index].gameID = nbGames;
+      nbGames++;
+      write_client(clients[opponent_index].sock,"gameStarted:");
    }
+   else if(strcmp("move", token) == 0)
+   {
+      printf("[MOVE] %s\n", buffer);
+      int opponent_index = clients[clientID].connectedTo;
+      int game_index = clients[clientID].gameID;
+      int hole = atoi(strtok(NULL, "\0"));
+      GameState * gameState = &games[game_index].state;
+      *gameState = playTurn(gameState, hole);
+      if(isFinished(gameState)){
+         int winner = getWinner(gameState);
+         if(winner == 0){
+            write_client(clients[clientID].sock, "win:");
+            write_client(clients[opponent_index].sock, "lose:");
+         }else if(winner == 1){
+            write_client(clients[clientID].sock, "lose:");
+            write_client(clients[opponent_index].sock, "win:");
+         }else{
+            write_client(clients[clientID].sock, "draw:");
+            write_client(clients[opponent_index].sock, "draw:");
+         }
+         clients[clientID].gameID = NULL;
+         clients[opponent_index].gameID = NULL;
+         nbGames--;
+      }
+      else{
+         char game[BUF_SIZE] = "gameState:";
+         serializeGameState(gameState, &game);
+         write_client(clients[opponent_index].sock, game);
+         write_client(clients[clientID].sock, game);
+      }
+   }
+   else if(strcmp("quit", token) == 0)
+   {
+      if(clients[clientID].gameID != NULL){
+         int opponent_index = clients[clientID].connectedTo;
+         clients[clientID].gameID = NULL;
+         clients[opponent_index].gameID = NULL;
+         nbGames--;
+         write_client(clients[opponent_index].sock, "quit:");
+      }
+   }
+}
 
-
-
+/**
+ * @brief  Serialize a game state into a buffer
+ * 
+ * @param gameState 
+ * @param buffer 
+ * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
+ */
+int serializeGameState(const GameState* gameState, char* buffer){
+   char temp[BUF_SIZE];
+   for(int i = 0; i < NUM_HOLES; i++){
+      sprintf(temp, "%d ", gameState->board[0][i]);
+      strcat(buffer, temp);
+   }
+   strcat(buffer, "\n");
+   for(int i = 0; i < NUM_HOLES; i++){
+      sprintf(temp, "%d ", gameState->board[1][i]);
+      strcat(buffer, temp);
+   }
+   strcat(buffer, "\n");
+   sprintf(temp, "%d\n", gameState->currentPlayer);
+   strcat(buffer, temp);
+   sprintf(temp, "%d\n", gameState->score[0]);
+   strcat(buffer, temp);
+   sprintf(temp, "%d\n", gameState->score[1]);
+   strcat(buffer, temp);
+   return EXIT_SUCCESS;
 }
 
 int getClientIndex(char * name, Client * clients, int actual){
