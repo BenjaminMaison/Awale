@@ -176,6 +176,7 @@ GameState playTurn(GameState* game, int hole) {
 void displayGame(GameState *game, int player)
 {
     printf(" == GAME == \n");
+    printf("Write 'chat + message' to write in the chat\n");
     printf("Enter a number between 0 and 5 to play\n");
     printf("Enter 'quit' to exit the game\n");
     int currentPlayer = game->currentPlayer;

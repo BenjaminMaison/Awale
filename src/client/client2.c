@@ -322,6 +322,9 @@ static void server_update(SOCKET sock, char* buffer)
             clear();
             printf("Your opponent left the game !\n");
             menu_initial();
+         }else if(strcmp("chat", cmd) == 0){
+            cmd = strtok(NULL, "\0");
+            printf("%s\n", cmd);
          }
          break;
       case GAME:
@@ -355,7 +358,8 @@ static void server_update(SOCKET sock, char* buffer)
          {
             cmd = strtok(NULL, "\0");
             printf("%s\n", cmd);
-         }else if(strcmp("disconnected", cmd) == 0){
+         }
+         else if(strcmp("disconnected", cmd) == 0){
             clear();
             printf("%s disconnected...\n", strtok(NULL, "\0"));
             menu_initial();
@@ -392,7 +396,7 @@ static void menu_connection()
 static void menu_connected()
 {
    state = CONNECTED;
-   printf("Menu :\n");
+   printf("Write 'chat + message' to write in the chat\n");
    printf("1. Start the game\n");
    printf("Enter 'exit' to disconnect from this player\n");
 }

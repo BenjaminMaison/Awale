@@ -366,7 +366,6 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
    else if(strcmp("chat", token) == 0)
    {
       int opponent_index = clients[clientID].connectedTo;
-      printf("id de l'opponent %d", opponent_index);
       if(opponent_index != -1){
          token = strtok(NULL, "\0");
          strncpy(toSend, "chat:", BUF_SIZE - 1);
