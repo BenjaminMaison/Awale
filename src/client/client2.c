@@ -29,7 +29,7 @@ static void end(void)
 #endif
 }
 
-enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED};
+enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED, LOOK_BIO, EDIT_BIO};
 typedef enum State State;
 
 GameState gameState;
@@ -172,9 +172,35 @@ static void user_update(SOCKET sock,char* buffer)
    switch (state) {
       case MENU:
             if(strcmp("1", buffer) == 0){
-               write_server(sock, "getListPlayers:");
+               write_server(sock, "getListPlayers:1");
+            }
+            else if(strcmp("2", buffer) == 0){
+               write_server(sock, "getListPlayers:2");
+            }
+            else if(strcmp("3", buffer) == 0){
+               write_server(sock, "getOwnBio:");
             }
             break;
+      case LOOK_BIO:
+         if(strcmp("quit", buffer) == 0){
+            clear();
+            menu_initial();
+         }else{
+            strcpy(toSend, "look_bio:");
+            strcat(toSend, buffer);
+            write_server(sock, toSend);
+         }
+         break;
+      case EDIT_BIO:
+         if(strcmp("quit", buffer) == 0){
+            clear();
+            menu_initial();
+         }else{
+            strcpy(toSend, "edit_bio:");
+            strcat(toSend, buffer);
+            write_server(sock, toSend);
+         }
+         break;
       case CONNECTION:
          if(strcmp("quit", buffer) == 0){
             clear();
@@ -266,10 +292,38 @@ static void server_update(SOCKET sock, char* buffer)
       case MENU:
          if(strcmp("listPlayers", cmd) == 0){
             clear();
-            displayPlayers(strtok(NULL, "\0"));
+            int bio = atoi(strtok(NULL, ","));
+            displayPlayers(bio, strtok(NULL, "\0"));
          }else if(strcmp("invite", cmd) == 0){
             clear();
             menu_invitation(strtok(NULL, "\0"));
+         }else if(strcmp("bio", cmd) == 0){
+            clear();
+            char* bio = strtok(NULL, "\0");
+            printf("Your bio is: %s\n", bio);
+            menu_edit_bio();
+         }
+         break;
+      case LOOK_BIO:
+         if(strcmp("error", cmd) == 0){
+            printf("Please enter a correct player number\n");
+         }else if(strcmp("bio", cmd) == 0){
+            char* name = strtok(NULL, ",");
+            char* bio = strtok(NULL, "\0");
+            printf("%s's bio : %s\n", name, bio);
+            menu_look_bio();
+         }
+         break;
+      case EDIT_BIO:
+         if(strcmp("error", cmd) == 0){
+            printf("Please enter a shorter bio\n");
+         }
+         else if(strcmp("updated", cmd) == 0){
+            clear();
+            printf("Your bio has been succesfully updated ! \n");
+            char* bio = strtok(NULL, "\0");
+            printf("Your new bio is: %s\n", bio);
+            menu_initial();
          }
          break;
       case CONNECTION:
@@ -377,6 +431,8 @@ static void menu_initial()
 
    printf("Menu :\n");
    printf("1. Connect to an other player\n");
+   printf("2. See the other players bio\n");
+   printf("3. Edit your own bio\n");
 }
 
 static void menu_invitation(char* name)
@@ -390,7 +446,19 @@ static void menu_invitation(char* name)
 static void menu_connection()
 {
    state = CONNECTION;
-   printf("Enter the number of the player or 'quit' to exit this menu : \n");
+   printf("Enter the number of a player or 'quit' to exit this menu : \n");
+}
+
+static void menu_look_bio()
+{
+   state = LOOK_BIO;
+   printf("Enter the number of a player or 'quit' to exit this menu : \n");
+}
+
+static void menu_edit_bio()
+{
+   state = EDIT_BIO;
+   printf("Enter your new bio or 'quit' to exit this menu : \n");
 }
 
 static void menu_connected()
@@ -407,7 +475,7 @@ static void menu_game()
    displayGame(&gameState, player);
 }
 
-static void displayPlayers(char* buffer){
+static void displayPlayers(int bio, char* buffer){
    char* token = strtok(buffer, ",");
    int i = 1;
    while(token != NULL){
@@ -417,7 +485,12 @@ static void displayPlayers(char* buffer){
       token = strtok(NULL, ",");
       i++;
    }
-   menu_connection();
+   if(bio == 1){
+      menu_connection();
+   }else{
+      menu_look_bio();
+   }
+   
 }
 
 /**

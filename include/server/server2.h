@@ -24,6 +24,8 @@ typedef struct in_addr IN_ADDR;
 #define MAX_CLIENTS     100
 
 #define BUF_SIZE    1024
+#define BIO_SIZE    512
+
 
 #include "client2.h"
 

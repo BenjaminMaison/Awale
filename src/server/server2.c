@@ -101,6 +101,8 @@ static void app(void)
          clients[actual] = c;
          clients[actual].connectedTo = -1;
          clients[actual].gameID = -1;
+         strncpy(clients[actual].bio, "Hello, lets play awale together :)", BIO_SIZE-1);
+
          actual++;
       }
       else
@@ -251,6 +253,8 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
    printf("[ACTION] %s\n", token);
    if(strcmp("getListPlayers", token) == 0){
       strncpy(toSend, "listPlayers:", BUF_SIZE-1);
+      strncat(toSend, strtok(NULL, "\0"), sizeof(toSend) - strlen(toSend) - 1);
+      strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
       int i;
       for(i = 0; i<actual; i++){
          printf("%s\n",clients[i].name);
@@ -373,6 +377,38 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
          strncat(toSend, " : ", sizeof toSend - strlen(toSend) - 1);
          strncat(toSend, token, sizeof toSend - strlen(toSend) - 1);
          write_client(clients[opponent_index].sock, toSend);
+      }
+   }
+   else if(strcmp("look_bio", token) == 0)
+   {
+      token = strtok(NULL, "\0");
+      int otherClientID = atoi(token)-1;
+      if(otherClientID>=actual || otherClientID<0){
+         write_client(clients[clientID].sock, "error");
+      }else{
+         strncpy(toSend, "bio:", BUF_SIZE-1);
+         strncat(toSend, clients[otherClientID].name, sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, clients[otherClientID].bio, sizeof(toSend) - strlen(toSend) - 1);
+         write_client(clients[clientID].sock, toSend);
+      }
+   }
+   else if(strcmp("getOwnBio", token) == 0)
+   {
+      strncpy(toSend, "bio:", BUF_SIZE-1);
+      strncat(toSend, clients[clientID].bio, sizeof(toSend) - strlen(toSend) - 1);
+      write_client(clients[clientID].sock, toSend);
+   }
+   else if(strcmp("edit_bio", token) == 0)
+   {
+      token = strtok(NULL, "\0");
+      if(strlen(token)>BIO_SIZE+1){
+         write_client(clients[clientID].sock, "error:");
+      }else{
+         strcpy(clients[clientID].bio, token);
+         strncpy(toSend, "updated:", BUF_SIZE-1);
+         strncat(toSend, clients[clientID].bio, sizeof(toSend) - strlen(toSend) - 1);
+         write_client(clients[clientID].sock, toSend);
       }
    }
 }

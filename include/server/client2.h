@@ -9,6 +9,7 @@ typedef struct
    char name[BUF_SIZE];
    int connectedTo;
    int gameID;
+   char bio[BIO_SIZE];
 }Client;
 
 #endif /* guard */
