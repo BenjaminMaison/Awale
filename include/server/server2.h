@@ -9,7 +9,6 @@
 #include <netdb.h> /* gethostbyname */
 
 #include "../awale/awale.h"
-#include "../request.h"
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1

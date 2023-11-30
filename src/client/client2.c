@@ -159,6 +159,9 @@ static int read_server(SOCKET sock, char *buffer)
 
 static void write_server(SOCKET sock, const char *buffer)
 {
+   #ifdef DEBUG
+   debug("[CLIENT COMMAND] %s\n", buffer);
+   #endif
    if(send(sock, buffer, strlen(buffer), 0) < 0)
    {
       perror("send()");

@@ -270,7 +270,6 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
          strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
       }
       write_client(sock, toSend);
-      printf("%s\n",toSend);
    }else if(strcmp("connectToPlayer", token) == 0){
       token = strtok(NULL, "\0");
       int otherClientID = atoi(token)-1;
