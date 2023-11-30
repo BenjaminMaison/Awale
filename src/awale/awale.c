@@ -64,6 +64,9 @@ int getWinner(GameState* game)
 int isLegal(GameState* game,int hole)
 {
     // Check if the chosen hole is valid and contains stones
+    if(game->currentPlayer == 0) {
+        hole = NUM_HOLES - 1 - hole;
+    }
     if (hole < 0 || hole >= NUM_HOLES || game->board[game->currentPlayer][hole] == 0) {
         return 0;
     }
