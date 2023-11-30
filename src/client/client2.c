@@ -5,6 +5,12 @@
 
 #include "../../include/client/client2.h"
 
+// write a debug macro that prints a string and the line
+#define DEBUG 1
+#ifdef DEBUG
+#define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
+
 static void init(void)
 {
 #ifdef WIN32
@@ -327,7 +333,6 @@ static void menu_invitation(char* name)
 static void menu_connection()
 {
    state = CONNECTION;
-   printf("Menu :\n");
    printf("Entrez le numéro du joueur : \n");
 }
 
