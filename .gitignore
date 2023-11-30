@@ -1,6 +1,6 @@
 *.o
-client
-server
+client.exe
+server.exe
 
 # ide
 .vscode

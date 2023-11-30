@@ -5,8 +5,6 @@ CFLAGS = -Wall
 CLIENT_SRC = src/client/client2.c
 SERVER_SRC = src/server/server2.c
 AWALE_SRC = src/awale/awale.c
-REQUEST_SRC = src/request.c
-RESPONSE_SRC = src/response.c
 
 # List of object files
 CLIENT_OBJ = $(CLIENT_SRC:.c=.o)
@@ -14,8 +12,8 @@ SERVER_OBJ = $(SERVER_SRC:.c=.o)
 AWALE_OBJ = $(AWALE_SRC:.c=.o)
 
 # Executables
-CLIENT_EXEC = client
-SERVER_EXEC = server
+CLIENT_EXEC = client.exe
+SERVER_EXEC = server.exe
 
 all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
