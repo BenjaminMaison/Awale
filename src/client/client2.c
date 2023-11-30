@@ -5,8 +5,6 @@
 
 #include "../../include/client/client2.h"
 
-// write a debug macro that prints a string and the line
-#define DEBUG 1
 #ifdef DEBUG
 #define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
@@ -51,7 +49,6 @@ static void app(const char *address, const char *name)
 
    clear();
    menu_initial();
-   //state = GAME;
 
    while(1)
    {
@@ -89,7 +86,6 @@ static void app(const char *address, const char *name)
          if(strlen(buffer) > 0){
             user_update(sock, buffer);
          }
-         //write_server(sock, buffer);
       }
       else if(FD_ISSET(sock, &rdfs))
       {
@@ -239,7 +235,9 @@ static void server_update(SOCKET sock, char* buffer)
    char temp[BUF_SIZE];
    strcpy(temp, buffer);
    char* cmd = strtok(temp, ":");
-   printf("[SERVER COMMAND] %s\n", cmd);
+   #ifdef DEBUG
+   debug("[SERVER COMMAND] %s\n", cmd);
+   #endif
    switch (state) {
       case MENU:
          if(strcmp("listPlayers", cmd) == 0){

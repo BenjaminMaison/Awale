@@ -17,6 +17,9 @@ SERVER_EXEC = server.exe
 
 all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
+debug : CFLAGS += -DDEBUG -g
+debug : all
+
 $(CLIENT_EXEC): $(CLIENT_OBJ) $(AWALE_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
