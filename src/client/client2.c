@@ -43,6 +43,7 @@ static void app(const char *address, const char *name)
    /* send our name */
    write_server(sock, name);
 
+   clear();
    menu_initial();
    //state = GAME;
 
@@ -179,9 +180,11 @@ static void user_update(SOCKET sock,char* buffer)
       case INVITATION:
          if(strcmp("1", buffer) == 0){
             write_server(sock, "accept:");
+            clear();
             menu_connected();
          }else if(strcmp("2", buffer) == 0){
             write_server(sock, "refuse:");
+            clear();
             menu_initial();
          }
          break;
@@ -189,7 +192,7 @@ static void user_update(SOCKET sock,char* buffer)
          if(strcmp("1", buffer) == 0){
             write_server(sock, "startGame:");
             clear();
-            printf("Vous avez commencé une partie.\n");
+            printf("You started a game.\n");
             initGameState(&gameState);
             player = 0;
             menu_game();
@@ -197,9 +200,26 @@ static void user_update(SOCKET sock,char* buffer)
          break;
       case GAME:
          if(strlen(buffer) == 1 && (buffer[0] >= '0' && buffer[0] <= '5')){
-            strcpy(toSend, "move:");
-            strcat(toSend, buffer);
-            write_server(sock, toSend);
+            if(gameState.currentPlayer != player){
+               printf("It's not your turn !\n");
+            }
+            else if(!isLegal(&gameState, atoi(buffer))){
+               printf("Illegal move !\n");
+            }
+            else
+            {
+               strcpy(toSend, "move:");
+               strcat(toSend, buffer);
+               write_server(sock, toSend);
+            }
+         }
+         else if(strcmp("quit", buffer) == 0){
+            write_server(sock, "quit:");
+            clear();
+            menu_connected();
+         }
+         else {
+            printf("Please enter a number between 0 and 6. Enter 'quit' to exit the game\n");
          }
          break;
       default:
@@ -217,33 +237,38 @@ static void server_update(SOCKET sock, char* buffer)
    switch (state) {
       case MENU:
          if(strcmp("listPlayers", cmd) == 0){
+            clear();
             displayPlayers(strtok(NULL, "\0"));
          }else if(strcmp("invite", cmd) == 0){
+            clear();
             menu_invitation(strtok(NULL, "\0"));
          }
          break;
       case CONNECTION:
          if(strcmp("error", cmd) == 0){
-            printf("Veuillez entrer le numéro d'un joueur correct\n");
+            printf("Please enter a correct player number\n");
          }else if(strcmp("sent", cmd) == 0){
             state = INVITATION;
          }else if(strcmp("invite", cmd) == 0){
+            clear();
             menu_invitation(strtok(NULL, "\0"));
          }
          break;
       case INVITATION:
          if(strcmp("accepted", cmd) == 0){
-            printf("%s a accepté votre invitation !\n", strtok(NULL, "\0"));
+            clear();
+            printf("%s accepted your invitation !\n", strtok(NULL, "\0"));
             menu_connected();
          }else if(strcmp("refused", cmd) == 0){
-            printf("%s a refusé votre invitation...\n", strtok(NULL, "\0"));
+            clear();
+            printf("%s refused your invitation...\n", strtok(NULL, "\0"));
             menu_initial();
          }
          break;
       case CONNECTED:
          if(strcmp("gameStarted", cmd) == 0){
             clear();
-            printf("Votre adversaire a commencé une partie.\n");
+            printf("Your opponent has started a game.\n");
             initGameState(&gameState);
             player = 1;
             menu_game();
@@ -252,9 +277,30 @@ static void server_update(SOCKET sock, char* buffer)
       case GAME:
          if(strcmp("gameState", cmd) == 0){
             deserializeGameState(buffer, &gameState);
+            clear();
             displayGame(&gameState, player);
          }
-
+         else if(strcmp("win", cmd) == 0)
+         {
+            printf("You won !\n");
+            menu_connected();
+         }
+         else if(strcmp("lose", cmd) == 0)
+         {
+            printf("You lost !\n");
+            menu_connected();
+         }
+         else if(strcmp("draw", cmd) == 0)
+         {
+            printf("It's a draw !\n");
+            menu_connected();
+         }
+         else if(strcmp("quit", cmd) == 0)
+         {
+            clear();
+            printf("Your opponent quit the game !\n");
+            menu_connected();
+         }
          break;
       default:
          break;
@@ -263,19 +309,19 @@ static void server_update(SOCKET sock, char* buffer)
 
 static void menu_initial()
 {
-      state = MENU;
-      printf("Bienvenue sur le jeu Awale!\n\n");
+   state = MENU;
+   printf("Bienvenue sur le jeu Awale!\n\n");
 
-      printf("Menu :\n");
-      printf("1. Se connecter à un autre joueur\n");
+   printf("Menu :\n");
+   printf("1. Se connecter à un autre joueur\n");
 }
 
 static void menu_invitation(char* name)
 {
-      state = INVITATION;
-      printf("%s vous a envoyé une invitation\n", name);
-      printf("1 - Accepter\n");
-      printf("2 - Refuser\n");
+   state = INVITATION;
+   printf("%s vous a envoyé une invitation\n", name);
+   printf("1 - Accepter\n");
+   printf("2 - Refuser\n");
 }
 
 static void menu_connection()

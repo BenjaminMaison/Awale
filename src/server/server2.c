@@ -297,10 +297,38 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       int hole = atoi(strtok(NULL, "\0"));
       GameState * gameState = &games[game_index].state;
       *gameState = playTurn(gameState, hole);
-      char game[BUF_SIZE] = "gameState:";
-      serializeGameState(gameState, &game);
-      write_client(clients[opponent_index].sock, game);
-      write_client(clients[clientID].sock, game);
+      if(isFinished(gameState)){
+         int winner = getWinner(gameState);
+         if(winner == 0){
+            write_client(clients[clientID].sock, "win:");
+            write_client(clients[opponent_index].sock, "lose:");
+         }else if(winner == 1){
+            write_client(clients[clientID].sock, "lose:");
+            write_client(clients[opponent_index].sock, "win:");
+         }else{
+            write_client(clients[clientID].sock, "draw:");
+            write_client(clients[opponent_index].sock, "draw:");
+         }
+         clients[clientID].gameID = NULL;
+         clients[opponent_index].gameID = NULL;
+         nbGames--;
+      }
+      else{
+         char game[BUF_SIZE] = "gameState:";
+         serializeGameState(gameState, &game);
+         write_client(clients[opponent_index].sock, game);
+         write_client(clients[clientID].sock, game);
+      }
+   }
+   else if(strcmp("quit", token) == 0)
+   {
+      if(clients[clientID].gameID != NULL){
+         int opponent_index = clients[clientID].connectedTo;
+         clients[clientID].gameID = NULL;
+         clients[opponent_index].gameID = NULL;
+         nbGames--;
+         write_client(clients[opponent_index].sock, "quit:");
+      }
    }
 }
 
