@@ -193,7 +193,7 @@ void displayGame(GameState *game, int player)
     printf(YELLOW "Enter 'quit' to exit the game\n" RESET);
     int currentPlayer = game->currentPlayer;
     if(player == currentPlayer) {
-        printf(RED "[Your turn\n]" RESET);
+        printf(RED "[Your turn]\n" RESET);
     }
     else if(player != -1){
         printf(RED "[Opponent's turn]\n" RESET);
