@@ -32,3 +32,7 @@ $(SERVER_EXEC): $(SERVER_OBJ) $(AWALE_OBJ)
 
 clean:
 	rm -f $(CLIENT_EXEC) $(SERVER_EXEC) $(CLIENT_OBJ) $(SERVER_OBJ) $(AWALE_OBJ)
+
+# To create a zip file of the project in a folder named "awale"
+zip:
+	zip -r awale.zip src/ include/ Makefile README.md
