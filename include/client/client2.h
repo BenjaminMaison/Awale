@@ -43,8 +43,8 @@ static void menu_look_bio();
 static void menu_edit_bio();
 static void displayPlayers(int bio, char* buffer);
 static void displayGames(char* buffer);
-static int deserializeGameState(const char* buffer, GameState* gameState);
-static int serializeGameState(const GameState* gameState, char* buffer);
+static int deserializeGameState(char* buffer, GameState* gameState);
+static void clear();
 int letterToHole(char letter);
 
 

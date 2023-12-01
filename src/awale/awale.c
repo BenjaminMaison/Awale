@@ -2,8 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//GameState game;
-
+/**
+ * @brief Initialize the game state
+ * 
+ * @param game the game state to initialize
+ */
 void initGameState(GameState* game) 
 {
     // Initialize the game state
@@ -173,6 +176,12 @@ GameState playTurn(GameState* game, int hole) {
     return newGame;
 }
 
+/**
+ * @brief Display the game state according to the player's perspective
+ * 
+ * @param game the game state
+ * @param player the player (-1 for observers)
+ */
 void displayGame(GameState *game, int player)
 {
     printf(" == GAME == \n");
@@ -258,33 +267,3 @@ void displayGame(GameState *game, int player)
     
     printf("\n\n"); // Add extra line for separation
 }
-
-void clear()
-{
-    // Clear the terminal
-    printf("\033[2J\033[1;1H");
-}
-
-void refresh()
-{
-    // Refresh the terminal
-    printf("\033[0;0H");
-}
-
-// int main()
-// {
-//     GameState game;
-//     init(&game);
-//     clear();
-//     display(&game);
-//     int hole;
-//     while(!isFinished(&game)) {
-//         printf("\nPlayer %d, choose a hole: ", game.currentPlayer);
-//         scanf("%d", &hole);
-//         game = playTurn(&game, hole);
-//         refresh();
-//         display(&game);
-//     }
-//     printf("Player %d wins!\n", game.score[0] > game.score[1] ? 0 : 1);
-//     return 0;
-// }

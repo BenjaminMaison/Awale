@@ -142,14 +142,10 @@ static void app(void)
                   }
                   closesocket(clients[i].sock);
                   remove_client(clients, i, &actual);
-                  // strncpy(buffer, client.name, BUF_SIZE - 1);
-                  // strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  // send_message_to_all_clients(clients, client, actual, buffer, 1);
                }
                else
                {
                   action(buffer, clients, actual, i);
-                  // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
             }
@@ -176,27 +172,6 @@ static void remove_client(Client *clients, int to_remove, int *actual)
    memmove(clients + to_remove, clients + to_remove + 1, (*actual - to_remove - 1) * sizeof(Client));
    /* number client - 1 */
    (*actual)--;
-}
-
-static void send_message_to_all_clients(Client *clients, Client sender, int actual, const char *buffer, char from_server)
-{
-   int i = 0;
-   char message[BUF_SIZE];
-   message[0] = 0;
-   for(i = 0; i < actual; i++)
-   {
-      /* we don't send message to the sender */
-      if(sender.sock != clients[i].sock)
-      {
-         if(from_server == 0)
-         {
-            strncpy(message, sender.name, BUF_SIZE - 1);
-            strncat(message, " : ", sizeof message - strlen(message) - 1);
-         }
-         strncat(message, buffer, sizeof message - strlen(message) - 1);
-         write_client(clients[i].sock, message);
-      }
-   }
 }
 
 static int init_connection(void)
@@ -260,11 +235,13 @@ static void write_client(SOCKET sock, const char *buffer)
    }
 }
 
-static void action(const char *buffer, Client *clients, int actual, int clientID){
+static void action(char *buffer, Client *clients, int actual, int clientID){
    char toSend[BUF_SIZE];
    SOCKET sock = clients[clientID].sock;
    char* token = strtok(buffer, ":");
-   printf("[ACTION] %s\n", token);
+   #ifdef DEBUG
+   debug("[ACTION]: %s", token);
+   #endif
    if(strcmp("getListPlayers", token) == 0){
       strncpy(toSend, "listPlayers:", BUF_SIZE-1);
       strncat(toSend, strtok(NULL, "\0"), sizeof(toSend) - strlen(toSend) - 1);
@@ -333,7 +310,6 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
    }
    else if(strcmp("move", token) == 0)
    {
-      printf("[MOVE] %s\n", buffer);
       int opponent_index = clients[clientID].connectedTo;
       int game_index = clients[clientID].gameID;
       int hole = atoi(strtok(NULL, "\0"));
@@ -366,7 +342,7 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       }
       else{
          strncpy(toSend, "gameState:", BUF_SIZE-1);
-         serializeGameState(&games[game_index].state, &toSend);
+         serializeGameState(&games[game_index].state, toSend);
          write_client(clients[opponent_index].sock, toSend);
          write_client(clients[clientID].sock, toSend);
          for(int i = 0; i < games[game_index].nbObservers; i++){
@@ -465,14 +441,8 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       if(game_index>=nbGames || game_index<0){
          write_client(clients[clientID].sock, "error");
       }else{
-         //strcpy(toSend, "game:");
-         //strncat(toSend, clients[games[game_index].player1].name, sizeof(toSend) - strlen(toSend) - 1);
-         //strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
-         //strncat(toSend, clients[games[game_index].player2].name, sizeof(toSend) - strlen(toSend) - 1);
-         //write_client(clients[clientID].sock, toSend);
-
          strncpy(toSend, "gameState:", BUF_SIZE-1);
-         serializeGameState(&games[game_index].state, &toSend);
+         serializeGameState(&games[game_index].state, toSend);
          write_client(clients[clientID].sock, toSend);
          if(games[game_index].nbObservers > 0){
             games[game_index].observers = realloc(games[game_index].observers, (games[game_index].nbObservers+1)*sizeof(int));
@@ -514,7 +484,7 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
  * @param buffer 
  * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
  */
-int serializeGameState(const GameState* gameState, char* buffer){
+static int serializeGameState(const GameState* gameState, char* buffer){
    char temp[BUF_SIZE];
    for(int i = 0; i < NUM_HOLES; i++){
       sprintf(temp, "%d ", gameState->board[0][i]);
