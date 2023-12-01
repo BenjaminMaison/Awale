@@ -176,18 +176,31 @@ GameState playTurn(GameState* game, int hole) {
 void displayGame(GameState *game, int player)
 {
     printf(" == GAME == \n");
-    printf("Write 'chat + message' to write in the chat\n");
-    printf("Enter a number between 0 and 5 to play\n");
+    if(player != -1)
+    {
+        printf("Write 'chat + message' to write in the chat\n");
+        printf("Enter a number between 0 and 5 to play\n");
+    }
     printf("Enter 'quit' to exit the game\n");
     int currentPlayer = game->currentPlayer;
     if(player == currentPlayer) {
         printf("Your turn\n");
     }
-    else {
+    else if(player != -1){
         printf("Opponent's turn\n");
     }
-    printf("Your score: %d\n", game->score[player]);
-    printf("Opponent's score: %d\n", game->score[1 - player]);
+    if(player != -1) {
+        printf("Your score: %d\n", game->score[player]);
+        printf("Opponent's score: %d\n", game->score[1 - player]);
+    } else {
+        printf("Player 0 score: %d\n", game->score[0]);
+        printf("Player 1 score: %d\n", game->score[1]);
+    }
+
+    if(player == -1)
+    {
+        player = 0;
+    }
 
     // Display the board
     char topLabel = (player == 0) ? 'A' : 'a';

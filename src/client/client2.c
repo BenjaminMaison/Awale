@@ -29,7 +29,7 @@ static void end(void)
 #endif
 }
 
-enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED, LOOK_BIO, EDIT_BIO};
+enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED, LOOK_BIO, EDIT_BIO, CHOOSE_GAME, WATCH_GAME};
 typedef enum State State;
 
 GameState gameState;
@@ -145,7 +145,9 @@ static void end_connection(int sock)
 static int read_server(SOCKET sock, char *buffer)
 {
    int n = 0;
-
+   #ifdef DEBUG
+   debug("[READ SERVER] %s\n", buffer);
+   #endif
    if((n = recv(sock, buffer, BUF_SIZE - 1, 0)) < 0)
    {
       perror("recv()");
@@ -183,6 +185,9 @@ static void user_update(SOCKET sock,char* buffer)
             else if(strcmp("3", buffer) == 0){
                write_server(sock, "getOwnBio:");
             }
+            else if(strcmp("4", buffer) == 0) {
+               write_server(sock, "getListGames:");
+            }
             break;
       case LOOK_BIO:
          if(strcmp("quit", buffer) == 0){
@@ -200,6 +205,16 @@ static void user_update(SOCKET sock,char* buffer)
             menu_initial();
          }else{
             strcpy(toSend, "edit_bio:");
+            strcat(toSend, buffer);
+            write_server(sock, toSend);
+         }
+         break;
+      case CHOOSE_GAME:
+         if(strcmp("quit", buffer) == 0){
+            clear();
+            menu_initial();
+         }else{
+            strcpy(toSend, "chooseGame:");
             strcat(toSend, buffer);
             write_server(sock, toSend);
          }
@@ -254,17 +269,20 @@ static void user_update(SOCKET sock,char* buffer)
             strcat(toSend, strtok(NULL, "\0"));
             write_server(sock, toSend);
          }
-         else if(strlen(buffer) == 1 && (buffer[0] >= '0' && buffer[0] <= '5')){
+         else if(strlen(buffer) == 1 && ((buffer[0] >= 'a' && buffer[0] <= 'f') || (buffer[0] >= 'A' && buffer[0] <= 'F'))){
+            int hole = letterToHole(buffer[0]);
             if(gameState.currentPlayer != player){
                printf("It's not your turn !\n");
             }
-            else if(!isLegal(&gameState, atoi(buffer))){
+            else if(!isLegal(&gameState, hole)){
                printf("Illegal move !\n");
             }
             else
             {
+               char holeChar[2];
+               sprintf(holeChar, "%d", hole);
                strcpy(toSend, "move:");
-               strcat(toSend, buffer);
+               strcat(toSend, holeChar);
                write_server(sock, toSend);
             }
          }
@@ -274,7 +292,14 @@ static void user_update(SOCKET sock,char* buffer)
             menu_connected();
          }
          else {
-            printf("Please enter a number between 0 and 6. Enter 'quit' to exit the game\n");
+            printf("Please enter a letter between a (or A) and f (or F). Enter 'quit' to exit the game\n");
+         }
+         break;
+      case WATCH_GAME:
+         if(strcmp("quit", buffer) == 0){
+            write_server(sock, "stop:");
+            clear();
+            menu_initial();
          }
          break;
       default:
@@ -289,7 +314,7 @@ static void server_update(SOCKET sock, char* buffer)
    strcpy(temp, buffer);
    char* cmd = strtok(temp, ":");
    #ifdef DEBUG
-   debug("[SERVER COMMAND] %s\n", cmd);
+   debug("[SERVER COMMAND] %s\n", buffer);
    #endif
    switch (state) {
       case MENU:
@@ -305,6 +330,11 @@ static void server_update(SOCKET sock, char* buffer)
             char* bio = strtok(NULL, "\0");
             printf("Your bio is: %s\n", bio);
             menu_edit_bio();
+         } else if(strcmp("listGames", cmd) == 0){
+            clear();
+            printf("List of games:\n");
+            int i = 1;
+            displayGames(strtok(NULL, "\0"));
          }
          break;
       case LOOK_BIO:
@@ -327,6 +357,22 @@ static void server_update(SOCKET sock, char* buffer)
             char* bio = strtok(NULL, "\0");
             printf("Your new bio is: %s\n", bio);
             menu_initial();
+         }
+         break;
+      case CHOOSE_GAME:
+         if(strcmp("error", cmd) == 0){
+            printf("Please enter a correct game number\n");
+         }else if(strcmp("gameState", cmd) == 0){
+            clear();
+            //strcpy(player1, strtok(NULL, ","));
+            //strcpy(player2, strtok(NULL, ","));
+            //printf("You are now watching the game between %s and %s\n", player1, player2);
+            printf("You are now watching the game\n");
+            initGameState(&gameState);
+            deserializeGameState(buffer, &gameState);
+            player = -1;
+            displayGame(&gameState, player);
+            menu_watch_game();
          }
          break;
       case CONNECTION:
@@ -384,6 +430,39 @@ static void server_update(SOCKET sock, char* buffer)
             printf("%s\n", cmd);
          }
          break;
+      case WATCH_GAME:
+         if(strcmp("gameState", cmd) == 0) {
+            deserializeGameState(buffer, &gameState);
+            clear();
+            displayGame(&gameState, player);
+         }
+         else if(strcmp("win", cmd) == 0)
+         {
+            printf("Player 0 won !\n");
+            menu_initial();
+         }
+         else if(strcmp("lose", cmd) == 0)
+         {
+            printf("Player 1 won !\n");
+            menu_initial();
+         }
+         else if(strcmp("draw", cmd) == 0)
+         {
+            printf("It's a draw !\n");
+            menu_initial();
+         }
+         else if(strcmp("quit", cmd) == 0)
+         {
+            clear();
+            printf("One of the player left the game !\n");
+            menu_initial();
+         }
+         else if(strcmp("disconnected", cmd) == 0){
+            clear();
+            printf("%s disconnected...\n", strtok(NULL, "\0"));
+            menu_initial();
+         }
+         break;
       case GAME:
          if(strcmp("gameState", cmd) == 0){
             deserializeGameState(buffer, &gameState);
@@ -436,6 +515,7 @@ static void menu_initial()
    printf("1. Connect to an other player\n");
    printf("2. See the other players bio\n");
    printf("3. Edit your own bio\n");
+   printf("4. Watch a game\n");
 }
 
 static void menu_invitation(char* name)
@@ -444,6 +524,18 @@ static void menu_invitation(char* name)
    printf("%s sent you an invitation\n", name);
    printf("1 - Accept\n");
    printf("2 - Refuse\n");
+}
+
+static void menu_choose_game()
+{
+   state = CHOOSE_GAME;
+   printf("Enter the number of a game or 'quit' to exit this menu : \n");
+}
+
+static void menu_watch_game()
+{
+   state = WATCH_GAME;
+   printf("Enter 'quit' to exit the game\n");
 }
 
 static void menu_connection()
@@ -493,7 +585,20 @@ static void displayPlayers(int bio, char* buffer){
    }else{
       menu_look_bio();
    }
-   
+
+}
+
+void displayGames(char* buffer){
+   char* token = strtok(buffer, ",");
+   int i = 1;
+   while(token != NULL){
+      printf("Game %d: %s, ", i, token);
+      token = strtok(NULL, ",");
+      printf("%s\n", token);
+      token = strtok(NULL, ",");
+      i++;
+   }
+   menu_choose_game();
 }
 
 /**
@@ -532,6 +637,19 @@ static int deserializeGameState(const char* buffer, GameState* gameState) {
    gameState->score[1] = atoi(token);
 
    return EXIT_SUCCESS;  
+}
+
+int letterToHole(char letter)
+{
+    if(letter >= 'A' && letter <= 'F') {
+        return letter - 'A';
+    }
+    else if(letter >= 'a' && letter <= 'f') {
+        return letter - 'a';
+    }
+    else {
+        return -1;
+    }
 }
 
 

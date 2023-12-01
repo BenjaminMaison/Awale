@@ -5,6 +5,10 @@
 
 #include "../../include/server/server2.h"
 
+#ifdef DEBUG
+#define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
+
  /* an array for all games */
 int nbGames = 0;
 Game games[MAX_CLIENTS/2];
@@ -125,6 +129,16 @@ static void app(void)
                      strncat(toSend, client.name, sizeof(toSend) - strlen(toSend) - 1);
                      clients[client.connectedTo].connectedTo = -1;
                      write_client(clients[client.connectedTo].sock, toSend);
+                     if(client.gameID != -1){
+                        int game_index = client.gameID;
+                        for(int i = 0; i < games[game_index].nbObservers; i++){
+                           write_client(clients[games[game_index].observers[i]].sock, toSend);
+                        }
+                        free(games[game_index].observers);
+                        games[game_index].nbObservers = 0;
+                        clients[client.connectedTo].gameID = -1;
+                        nbGames--;
+                     }
                   }
                   closesocket(clients[i].sock);
                   remove_client(clients, i, &actual);
@@ -238,7 +252,7 @@ static int read_client(SOCKET sock, char *buffer)
 
 static void write_client(SOCKET sock, const char *buffer)
 {
-   printf("[CLIENT RESPONSE] %s\n", buffer);
+   printf("[CLIENT %d RESPONSE] %s\n", sock, buffer);
    if(send(sock, buffer, strlen(buffer), 0) < 0)
    {
       perror("send()");
@@ -311,6 +325,7 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       games[nbGames].player1 = clientID;
       games[nbGames].player2 = opponent_index;
       games[nbGames].state.currentPlayer = 0;
+      games->observers = NULL;
       clients[clientID].gameID = nbGames;
       clients[opponent_index].gameID = nbGames;
       nbGames++;
@@ -329,32 +344,53 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
          if(winner == 0){
             write_client(clients[clientID].sock, "win:");
             write_client(clients[opponent_index].sock, "lose:");
+            for(int i = 0; i < games[game_index].nbObservers; i++){
+               write_client(clients[games[game_index].observers[i]].sock, "win:");
+            }
          }else if(winner == 1){
             write_client(clients[clientID].sock, "lose:");
             write_client(clients[opponent_index].sock, "win:");
+            for(int i = 0; i < games[game_index].nbObservers; i++){
+               write_client(clients[games[game_index].observers[i]].sock, "lose:");
+            }
          }else{
             write_client(clients[clientID].sock, "draw:");
             write_client(clients[opponent_index].sock, "draw:");
+            for(int i = 0; i < games[game_index].nbObservers; i++){
+               write_client(clients[games[game_index].observers[i]].sock, "draw:");
+            }
          }
          clients[clientID].gameID = -1;
          clients[opponent_index].gameID = -1;
          nbGames--;
       }
       else{
-         char game[BUF_SIZE] = "gameState:";
-         serializeGameState(gameState, &game);
-         write_client(clients[opponent_index].sock, game);
-         write_client(clients[clientID].sock, game);
+         strncpy(toSend, "gameState:", BUF_SIZE-1);
+         serializeGameState(&games[game_index].state, &toSend);
+         write_client(clients[opponent_index].sock, toSend);
+         write_client(clients[clientID].sock, toSend);
+         for(int i = 0; i < games[game_index].nbObservers; i++){
+            write_client(clients[games[game_index].observers[i]].sock, toSend);
+         }
       }
    }
    else if(strcmp("quit", token) == 0)
    {
-      if(clients[clientID].gameID != -1){
+      int game_index = clients[clientID].gameID;
+      if(game_index != -1){
          int opponent_index = clients[clientID].connectedTo;
          clients[clientID].gameID = -1;
          clients[opponent_index].gameID = -1;
-         nbGames--;
          write_client(clients[opponent_index].sock, "quit:");
+         #ifdef DEBUG
+         debug("nbObservers: %d", games[game_index].nbObservers);
+         #endif
+         for(int i = 0; i < games[game_index].nbObservers; i++){
+            write_client(clients[games[game_index].observers[i]].sock, "quit:");
+         }
+         free(games[game_index].observers); 
+         games[game_index].nbObservers = 0;
+         nbGames--;
       }
    }
    else if(strcmp("exit", token) == 0)
@@ -410,6 +446,63 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
          write_client(clients[clientID].sock, toSend);
       }
    }
+   else if(strcmp("getListGames", token) == 0)
+   {
+      strncpy(toSend, "listGames:", BUF_SIZE-1);
+      for(int i = 0; i < nbGames; i++){
+         strncat(toSend, clients[games[i].player1].name, sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, clients[games[i].player2].name, sizeof(toSend) - strlen(toSend) - 1);
+         strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
+      }
+      write_client(clients[clientID].sock, toSend);
+   }
+   else if(strcmp("chooseGame", token) == 0)
+   {
+      int game_index = atoi(strtok(NULL, "\0"))-1;
+      if(game_index>=nbGames || game_index<0){
+         write_client(clients[clientID].sock, "error");
+      }else{
+         //strcpy(toSend, "game:");
+         //strncat(toSend, clients[games[game_index].player1].name, sizeof(toSend) - strlen(toSend) - 1);
+         //strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
+         //strncat(toSend, clients[games[game_index].player2].name, sizeof(toSend) - strlen(toSend) - 1);
+         //write_client(clients[clientID].sock, toSend);
+
+         strncpy(toSend, "gameState:", BUF_SIZE-1);
+         serializeGameState(&games[game_index].state, &toSend);
+         write_client(clients[clientID].sock, toSend);
+         if(games[game_index].nbObservers > 0){
+            games[game_index].observers = realloc(games[game_index].observers, (games[game_index].nbObservers+1)*sizeof(int));
+            games[game_index].observers[games[game_index].nbObservers] = clientID;
+         }
+         else{
+            games[game_index].observers = malloc(sizeof(int));
+            games[game_index].observers[0] = clientID;
+         }
+         clients[clientID].gameID = game_index;
+         games[game_index].nbObservers++;
+      }
+   }
+   else if(strcmp("stop", token) == 0){
+      // case where the client is an observer
+      int game_index = clients[clientID].gameID;
+      if(game_index != -1){
+         int* observers = games[game_index].observers;
+         int nbObservers = games[game_index].nbObservers;
+         int i = 0;
+         for(i = 0; i < nbObservers; i++){
+            if(observers[i] == clientID){
+               break;
+            }
+         }
+         if(i < nbObservers && nbObservers > 1){
+            memmove(observers + i, observers + i + 1, (nbObservers - i - 1) * sizeof(int));
+         }
+         games[game_index].nbObservers--;
+      }
+   }
+
 }
 
 /**

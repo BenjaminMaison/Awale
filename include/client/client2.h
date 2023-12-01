@@ -34,14 +34,18 @@ static void user_update(SOCKET sock,char* buffer);
 static void server_update(SOCKET sock,char* buffer);
 static void menu_initial();
 static void menu_invitation(char* name);
+static void menu_choose_game();
+static void menu_watch_game();
 static void menu_connection();
 static void menu_connected();
 static void menu_game();
 static void menu_look_bio();
 static void menu_edit_bio();
 static void displayPlayers(int bio, char* buffer);
+static void displayGames(char* buffer);
 static int deserializeGameState(const char* buffer, GameState* gameState);
 static int serializeGameState(const GameState* gameState, char* buffer);
+int letterToHole(char letter);
 
 
 #endif /* guard */

@@ -25,6 +25,8 @@ typedef struct Game{
     GameState state;
     int player1;
     int player2;
+    int* observers;
+    int nbObservers;
 } Game;
 
 void initGameState(GameState* game);
