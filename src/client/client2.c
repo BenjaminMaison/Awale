@@ -426,7 +426,7 @@ static void server_update(SOCKET sock, char* buffer)
             menu_initial();
          }else if(strcmp("chat", cmd) == 0){
             cmd = strtok(NULL, "\0");
-            printf("%s\n", cmd);
+            printf(CYAN "%s\n" RESET, cmd);
          }
          break;
       case WATCH_GAME:
@@ -492,7 +492,7 @@ static void server_update(SOCKET sock, char* buffer)
          else if(strcmp("chat", cmd) == 0)
          {
             cmd = strtok(NULL, "\0");
-            printf("%s\n", cmd);
+            printf(CYAN "%s\n" RESET, cmd);
          }
          else if(strcmp("disconnected", cmd) == 0){
             clear();
