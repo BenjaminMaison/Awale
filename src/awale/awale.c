@@ -184,7 +184,7 @@ GameState playTurn(GameState* game, int hole) {
  */
 void displayGame(GameState *game, int player)
 {
-    printf(" == GAME == \n");
+    printf(BLUE " == GAME == \n" RESET);
     if(player != -1)
     {
         printf("Write 'chat + message' to write in the chat\n");
@@ -193,10 +193,10 @@ void displayGame(GameState *game, int player)
     printf("Enter 'quit' to exit the game\n");
     int currentPlayer = game->currentPlayer;
     if(player == currentPlayer) {
-        printf("Your turn\n");
+        printf("\033[1;31mYour turn\033[0m\n");
     }
     else if(player != -1){
-        printf("Opponent's turn\n");
+        printf("\033[1;31mOpponent's turn\033[0m\n");
     }
     if(player != -1) {
         printf("Your score: %d\n", game->score[player]);
@@ -233,7 +233,13 @@ void displayGame(GameState *game, int player)
     for(int i = (player == 0) ? (NUM_HOLES - 1) : 0; 
             (player == 0) ? (i >= 0) : (i < NUM_HOLES); 
             (player == 0) ? (i--) : (i++)) {
-        printf("  |    %d  ", game->board[1 - player][i]);
+        if(game->board[1 - player][i]>9){
+            printf("  |   %d  ", game->board[1 - player][i]);
+        }else if(game->board[1 - player][i]>99){
+            printf("  |   %d ", game->board[1 - player][i]);
+        }else{
+            printf("  |    %d  ", game->board[1 - player][i]);
+        }
     }
 
     printf("  |\n");
@@ -248,7 +254,13 @@ void displayGame(GameState *game, int player)
     for(int i = (player == 0) ? (NUM_HOLES - 1) : 0; 
             (player == 0) ? (i >= 0) : (i < NUM_HOLES); 
             (player == 0) ? (i--) : (i++)) {
-        printf("  |    %d  ", game->board[player][i]);
+        if(game->board[player][i]>9){
+            printf("  |   %d  ", game->board[player][i]);
+        }else if(game->board[player][i]>99){
+            printf("  |   %d ", game->board[player][i]);
+        }else{
+            printf("  |    %d  ", game->board[player][i]);
+        }
     }
     printf("  |\n");
 
