@@ -9,6 +9,15 @@
 #define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
+enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED, LOOK_BIO, EDIT_BIO, CHOOSE_GAME, WATCH_GAME};
+typedef enum State State;
+
+GameState gameState;
+int player = 0;
+
+State state = MENU;
+int waiting = 0;
+
 static void init(void)
 {
 #ifdef WIN32
@@ -28,15 +37,6 @@ static void end(void)
    WSACleanup();
 #endif
 }
-
-enum State {MENU, CONNECTION, GAME, END, INVITATION, CONNECTED, LOOK_BIO, EDIT_BIO, CHOOSE_GAME, WATCH_GAME};
-typedef enum State State;
-
-GameState gameState;
-int player = 0;
-
-State state = MENU;
-int waiting = 0;
 
 static void app(const char *address, const char *name)
 {
@@ -333,7 +333,6 @@ static void server_update(SOCKET sock, char* buffer)
          } else if(strcmp("listGames", cmd) == 0){
             clear();
             printf("List of games:\n");
-            int i = 1;
             displayGames(strtok(NULL, "\0"));
          }
          break;
@@ -608,10 +607,10 @@ void displayGames(char* buffer){
  * @param gameState 
  * @return int - EXIT_SUCCESS if success, EXIT_FAILURE otherwise
  */
-static int deserializeGameState(const char* buffer, GameState* gameState) {
+static int deserializeGameState(char* buffer, GameState* gameState) {
    const char * separators = "\n :";
    char* token = strtok(buffer, separators);
-   if(strcmp(token, "gameState") != 0){
+   if(strcmp("gameState", token) != 0){
       printf("Error parsing game state\n");
       return EXIT_FAILURE;
    }
@@ -652,6 +651,11 @@ int letterToHole(char letter)
     }
 }
 
+static void clear()  
+{
+   // Clear the terminal
+   printf("\033[2J\033[1;1H");
+}
 
 int main(int argc, char **argv)
 {

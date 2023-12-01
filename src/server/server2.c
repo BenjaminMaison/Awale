@@ -142,14 +142,10 @@ static void app(void)
                   }
                   closesocket(clients[i].sock);
                   remove_client(clients, i, &actual);
-                  // strncpy(buffer, client.name, BUF_SIZE - 1);
-                  // strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
-                  // send_message_to_all_clients(clients, client, actual, buffer, 1);
                }
                else
                {
                   action(buffer, clients, actual, i);
-                  // send_message_to_all_clients(clients, client, actual, buffer, 0);
                }
                break;
             }
@@ -463,12 +459,6 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       if(game_index>=nbGames || game_index<0){
          write_client(clients[clientID].sock, "error");
       }else{
-         //strcpy(toSend, "game:");
-         //strncat(toSend, clients[games[game_index].player1].name, sizeof(toSend) - strlen(toSend) - 1);
-         //strncat(toSend, ",", sizeof(toSend) - strlen(toSend) - 1);
-         //strncat(toSend, clients[games[game_index].player2].name, sizeof(toSend) - strlen(toSend) - 1);
-         //write_client(clients[clientID].sock, toSend);
-
          strncpy(toSend, "gameState:", BUF_SIZE-1);
          serializeGameState(&games[game_index].state, &toSend);
          write_client(clients[clientID].sock, toSend);
