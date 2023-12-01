@@ -408,7 +408,9 @@ static void action(const char *buffer, Client *clients, int actual, int clientID
       if(opponent_index != -1){
          token = strtok(NULL, "\0");
          strncpy(toSend, "chat:", BUF_SIZE - 1);
+         strncat(toSend, "[", sizeof toSend - strlen(toSend) - 1);
          strncat(toSend, clients[clientID].name, sizeof toSend - strlen(toSend) - 1);
+         strncat(toSend, "]", sizeof toSend - strlen(toSend) - 1);
          strncat(toSend, " : ", sizeof toSend - strlen(toSend) - 1);
          strncat(toSend, token, sizeof toSend - strlen(toSend) - 1);
          write_client(clients[opponent_index].sock, toSend);

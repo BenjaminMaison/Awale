@@ -179,7 +179,7 @@ void displayGame(GameState *game, int player)
     if(player != -1)
     {
         printf("Write 'chat + message' to write in the chat\n");
-        printf("Enter a number between 0 and 5 to play\n");
+        printf("Enter a letter between a (or A) and f (or F) to play\n");
     }
     printf("Enter 'quit' to exit the game\n");
     int currentPlayer = game->currentPlayer;
