@@ -168,6 +168,17 @@ static void clear_clients(Client *clients, int actual)
 
 static void remove_client(Client *clients, int to_remove, int *actual)
 {
+   // first save the clients array
+   Client temp_clients[MAX_CLIENTS];
+   memcpy(temp_clients, clients, MAX_CLIENTS*sizeof(Client));
+
+   for(int i = to_remove+1; i < *actual; i++){
+      if(temp_clients[i].connectedTo != -1)
+      {
+         int opponent = temp_clients[i].connectedTo;
+         clients[opponent].connectedTo--;
+      }      
+   }
    /* we remove the client in the array */
    memmove(clients + to_remove, clients + to_remove + 1, (*actual - to_remove - 1) * sizeof(Client));
    /* number client - 1 */
