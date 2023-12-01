@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 
 #include "../../include/server/server2.h"
 
@@ -36,6 +37,8 @@ static void end(void)
 
 static void app(void)
 {
+   srand(time(NULL));
+
    SOCKET sock = init_connection();
    char  buffer[BUF_SIZE];
    /* the index for the array */
@@ -310,14 +313,40 @@ static void action(char *buffer, Client *clients, int actual, int clientID){
       int opponent_index = clients[clientID].connectedTo;
       GameState * gameState = &games[nbGames].state;
       initGameState(gameState);
-      games[nbGames].player1 = clientID;
-      games[nbGames].player2 = opponent_index;
+      int randomInt = rand() % 2;
+      int client;
+      int opponent;
+      if(randomInt == 0)
+      {
+         printf("Player 0 starts\n");
+         client = 0;
+         opponent = 1;
+      } else {
+         printf("Player 1 starts\n");
+         client = 1;
+         opponent = 0;
+      }
+      games[nbGames].player1 = client;
+      games[nbGames].player2 = opponent;
+      char client_id[2];
+      sprintf(client_id, "%d", client);
+      char opponent_id[2];
+      sprintf(opponent_id, "%d", opponent);
+
       games[nbGames].state.currentPlayer = 0;
       games->observers = NULL;
       clients[clientID].gameID = nbGames;
       clients[opponent_index].gameID = nbGames;
       nbGames++;
-      write_client(clients[opponent_index].sock,"gameStarted:");
+      char clientMsg[BUF_SIZE];
+      strncpy(clientMsg, "gameStarted:", BUF_SIZE-1);
+      strncat(clientMsg, client_id, sizeof(toSend) - strlen(clientMsg) - 1);
+      write_client(clients[opponent_index].sock, clientMsg);
+      
+      char opponentMsg[BUF_SIZE];
+      strncpy(opponentMsg, "gameStarted:", BUF_SIZE-1);
+      strncat(opponentMsg, opponent_id, sizeof(toSend) - strlen(opponentMsg) - 1);
+      write_client(clients[clientID].sock, opponentMsg);
    }
    else if(strcmp("move", token) == 0)
    {
