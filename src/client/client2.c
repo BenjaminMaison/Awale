@@ -254,9 +254,6 @@ static void user_update(SOCKET sock,char* buffer)
             write_server(sock, "startGame:");
             clear();
             printf("You started a game.\n");
-            initGameState(&gameState);
-            player = 0;
-            menu_game();
          }else if(strcmp("exit", buffer) == 0){
             write_server(sock, "exit:");
             clear();
@@ -363,9 +360,6 @@ static void server_update(SOCKET sock, char* buffer)
             printf("Please enter a correct game number\n");
          }else if(strcmp("gameState", cmd) == 0){
             clear();
-            //strcpy(player1, strtok(NULL, ","));
-            //strcpy(player2, strtok(NULL, ","));
-            //printf("You are now watching the game between %s and %s\n", player1, player2);
             printf("You are now watching the game\n");
             initGameState(&gameState);
             deserializeGameState(buffer, &gameState);
@@ -412,9 +406,9 @@ static void server_update(SOCKET sock, char* buffer)
       case CONNECTED:
          if(strcmp("gameStarted", cmd) == 0){
             clear();
-            printf("Your opponent has started a game.\n");
+            printf("Game started.\n");
             initGameState(&gameState);
-            player = 1;
+            player = atoi(strtok(NULL, "\0"));
             menu_game();
          }else if(strcmp("disconnected", cmd) == 0){
             clear();
@@ -443,7 +437,7 @@ static void server_update(SOCKET sock, char* buffer)
          else if(strcmp("lose", cmd) == 0)
          {
             printf("Player 1 won !\n");
-            menu_initial();
+            menu_initial();   
          }
          else if(strcmp("draw", cmd) == 0)
          {
