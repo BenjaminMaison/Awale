@@ -94,7 +94,7 @@ static void app(const char *address, const char *name)
          /* server down */
          if(n == 0)
          {
-            printf("Server disconnected !\n");
+            printf(RED "Server disconnected !\n" RESET);
             break;
          }else{
             server_update(sock, buffer);
@@ -272,10 +272,10 @@ static void user_update(SOCKET sock,char* buffer)
          else if(strlen(buffer) == 1 && ((buffer[0] >= 'a' && buffer[0] <= 'f') || (buffer[0] >= 'A' && buffer[0] <= 'F'))){
             int hole = letterToHole(buffer[0]);
             if(gameState.currentPlayer != player){
-               printf("It's not your turn !\n");
+               printf(RED "It's not your turn !\n" RESET);
             }
             else if(!isLegal(&gameState, hole)){
-               printf("Illegal move !\n");
+               printf(RED "Illegal move !\n" RESET);
             }
             else
             {
@@ -390,22 +390,22 @@ static void server_update(SOCKET sock, char* buffer)
          if(strcmp("accepted", cmd) == 0){
             waiting = 0;
             clear();
-            printf("%s accepted your invitation !\n", strtok(NULL, "\0"));
+            printf(GREEN "%s accepted your invitation !\n" RESET, strtok(NULL, "\0"));
             menu_connected();
          }else if(strcmp("refused", cmd) == 0){
             waiting = 0;
             clear();
-            printf("%s refused your invitation...\n", strtok(NULL, "\0"));
+            printf(RED "%s refused your invitation...\n" RESET, strtok(NULL, "\0"));
             menu_initial();
          }else if(strcmp("cancel", cmd) == 0){
             waiting = 0;
             clear();
-            printf("%s canceled the invitation...\n", strtok(NULL, "\0"));
+            printf(RED "%s canceled the invitation...\n" RESET, strtok(NULL, "\0"));
             menu_initial();
          }else if(strcmp("disconnected", cmd) == 0){
             waiting = 0;
             clear();
-            printf("%s disconnected...\n", strtok(NULL, "\0"));
+            printf(RED "%s disconnected...\n" RESET, strtok(NULL, "\0"));
             menu_initial();
          }
          break;
@@ -418,11 +418,11 @@ static void server_update(SOCKET sock, char* buffer)
             menu_game();
          }else if(strcmp("disconnected", cmd) == 0){
             clear();
-            printf("%s disconnected...\n", strtok(NULL, "\0"));
+            printf(RED "%s disconnected...\n" RESET, strtok(NULL, "\0"));
             menu_initial();
          }else if(strcmp("exit", cmd) == 0){
             clear();
-            printf("Your opponent left the game !\n");
+            printf(RED "Your opponent left the game !\n" RESET);
             menu_initial();
          }else if(strcmp("chat", cmd) == 0){
             cmd = strtok(NULL, "\0");
@@ -470,23 +470,23 @@ static void server_update(SOCKET sock, char* buffer)
          }
          else if(strcmp("win", cmd) == 0)
          {
-            printf("You won !\n");
+            printf(GREEN "You won !\n" RESET);
             menu_connected();
          }
          else if(strcmp("lose", cmd) == 0)
          {
-            printf("You lost !\n");
+            printf(RED "You lost !\n" RESET);
             menu_connected();
          }
          else if(strcmp("draw", cmd) == 0)
          {
-            printf("It's a draw !\n");
+            printf(MAGENTA "It's a draw !\n" RESET);
             menu_connected();
          }
          else if(strcmp("quit", cmd) == 0)
          {
             clear();
-            printf("Your opponent quit the game !\n");
+            printf(RED "Your opponent quit the game !\n" RESET);
             menu_connected();
          }
          else if(strcmp("chat", cmd) == 0)
@@ -496,7 +496,7 @@ static void server_update(SOCKET sock, char* buffer)
          }
          else if(strcmp("disconnected", cmd) == 0){
             clear();
-            printf("%s disconnected...\n", strtok(NULL, "\0"));
+            printf(RED "%s disconnected...\n" RESET, strtok(NULL, "\0"));
             menu_initial();
          }
          break;
@@ -508,21 +508,20 @@ static void server_update(SOCKET sock, char* buffer)
 static void menu_initial()
 {
    state = MENU;
-   printf("Welcome to the Awale game!\n\n");
+   printf(BLUE "Welcome to the Awale game!\n\n" RESET);
 
-   printf("Menu :\n");
-   printf("1. Connect to an other player\n");
+   printf(YELLOW "1. Connect to an other player\n");
    printf("2. See the other players bio\n");
    printf("3. Edit your own bio\n");
-   printf("4. Watch a game\n");
+   printf("4. Watch a game\n" RESET);
 }
 
 static void menu_invitation(char* name)
 {
    state = INVITATION;
    printf("%s sent you an invitation\n", name);
-   printf("1 - Accept\n");
-   printf("2 - Refuse\n");
+   printf(GREEN "1 - Accept\n" RESET);
+   printf(RED "2 - Refuse\n" RESET);
 }
 
 static void menu_choose_game()
@@ -559,7 +558,7 @@ static void menu_connected()
 {
    state = CONNECTED;
    printf("Write 'chat + message' to write in the chat\n");
-   printf("1. Start the game\n");
+   printf(YELLOW "1. Start the game\n" RESET);
    printf("Enter 'exit' to disconnect from this player\n");
 }
 
@@ -573,9 +572,15 @@ static void displayPlayers(int bio, char* buffer){
    char* token = strtok(buffer, ",");
    int i = 1;
    while(token != NULL){
-      printf("Player %d: %s, ", i, token);
+      printf(YELLOW "Player %d: %s, " RESET, i, token);
       token = strtok(NULL, ",");
-      printf("%s\n", token);
+      if(strcmp("you", token) == 0){
+         printf(MAGENTA "%s\n" RESET, token);
+      }else if(strcmp("online", token) == 0){
+         printf(GREEN "%s\n" RESET, token);
+      }else{
+         printf(RED "%s\n" RESET, token);
+      }
       token = strtok(NULL, ",");
       i++;
    }

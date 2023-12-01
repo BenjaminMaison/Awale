@@ -516,7 +516,7 @@ int getClientIndex(char * name, Client * clients, int actual){
 
 int main(int argc, char **argv)
 {
-   printf("\033[1;31m""[START] Server launched\n""\033[0m");
+   printf("[START] Server launched\n");
 
    init();
 

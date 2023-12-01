@@ -187,23 +187,23 @@ void displayGame(GameState *game, int player)
     printf(BLUE " == GAME == \n" RESET);
     if(player != -1)
     {
-        printf("Write 'chat + message' to write in the chat\n");
-        printf("Enter a letter between a (or A) and f (or F) to play\n");
+        printf(YELLOW "Write 'chat + message' to write in the chat\n");
+        printf("Enter a letter between a (or A) and f (or F) to play\n" RESET);
     }
-    printf("Enter 'quit' to exit the game\n");
+    printf(YELLOW "Enter 'quit' to exit the game\n" RESET);
     int currentPlayer = game->currentPlayer;
     if(player == currentPlayer) {
-        printf("\033[1;31mYour turn\033[0m\n");
+        printf(RED "[Your turn\n]" RESET);
     }
     else if(player != -1){
-        printf("\033[1;31mOpponent's turn\033[0m\n");
+        printf(RED "[Opponent's turn]\n" RESET);
     }
     if(player != -1) {
-        printf("Your score: %d\n", game->score[player]);
-        printf("Opponent's score: %d\n", game->score[1 - player]);
+        printf(MAGENTA "Your score: %d\n" RESET, game->score[player]);
+        printf(CYAN "Opponent's score: %d\n" RESET, game->score[1 - player]);
     } else {
-        printf("Player 0 score: %d\n", game->score[0]);
-        printf("Player 1 score: %d\n", game->score[1]);
+        printf(MAGENTA "Player 0 score: %d\n" RESET, game->score[0]);
+        printf(CYAN "Player 1 score: %d\n" RESET, game->score[1]);
     }
 
     if(player == -1)
